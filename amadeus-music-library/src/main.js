@@ -27,16 +27,10 @@ let query = "";
 let mood = "all";
 let selectedPlaylistId = null;
 
-const backend = createAudioBackend();
-const player = createPlayer({
-  backend,
-  onChange: renderPlayer,
-});
-
-player.setVolume(lib.volume ?? 0.82);
-player.setQueue(sessions, lib.lastTrackId);
-
 const $ = (id) => document.getElementById(id);
+
+const backend = createAudioBackend();
+const player = createPlayer({ backend });
 
 function allPlayable() {
   return [...sessions, ...localTracks];
@@ -390,6 +384,10 @@ function bindTransport() {
     setView("local");
   });
 }
+
+player.subscribe(renderPlayer);
+player.setVolume(lib.volume ?? 0.82);
+player.setQueue(sessions, lib.lastTrackId);
 
 function escapeHtml(value) {
   return String(value ?? "")
