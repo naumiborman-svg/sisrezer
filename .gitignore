@@ -1,0 +1,6 @@
+.godot/
+.import/
+*.translation
+export/
+*.pck
+.DS_Store
