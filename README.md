@@ -38,4 +38,5 @@ godot --path .
 ```bash
 godot --headless --path . --import --quit
 godot --headless --path . -s res://tests/smoke.gd
+godot --headless --path . -s res://tests/rules.gd
 ```

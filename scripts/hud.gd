@@ -4,9 +4,9 @@ extends CanvasLayer
 var lives_label: Label
 var score_label: Label
 var stage_label: Label
-var enemy_label: Label
 var banner: Label
 var hint: Label
+var enemy_pips: Array[ColorRect] = []
 
 
 func _ready() -> void:
@@ -23,10 +23,25 @@ func _ready() -> void:
 	border.size = Vector2(2, 416)
 	add_child(border)
 
-	stage_label = _make_label(Vector2(428, 18), 14, Color("f0d878"))
-	lives_label = _make_label(Vector2(428, 70), 13, Color("9ee08a"))
-	enemy_label = _make_label(Vector2(428, 122), 13, Color("e08a8a"))
-	score_label = _make_label(Vector2(428, 174), 13, Color("d0d0d8"))
+	var ip := _make_label(Vector2(428, 12), 12, Color("f0d878"))
+	ip.size = Vector2(80, 18)
+	ip.text = "IP"
+
+	lives_label = _make_label(Vector2(428, 30), 16, Color("9ee08a"))
+	lives_label.size = Vector2(80, 22)
+
+	var enemy_title := _make_label(Vector2(428, 62), 12, Color("e08a8a"))
+	enemy_title.size = Vector2(80, 18)
+	enemy_title.text = "ENEMY"
+
+	_build_pips()
+
+	stage_label = _make_label(Vector2(428, 250), 13, Color("f0d878"))
+	stage_label.size = Vector2(80, 40)
+
+	score_label = _make_label(Vector2(428, 300), 13, Color("d0d0d8"))
+	score_label.size = Vector2(80, 48)
+
 	banner = _make_label(Vector2(40, 170), 28, Color("ffe680"))
 	banner.size = Vector2(336, 48)
 	banner.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -36,8 +51,19 @@ func _ready() -> void:
 	hint.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	hint.visible = false
 
-	var help := _make_label(Vector2(428, 250), 11, Color("8a8a96"))
-	help.text = "WASD 移动\n空格 射击\nP 暂停\n闪光坦克\n掉落道具"
+	var help := _make_label(Vector2(428, 360), 11, Color("8a8a96"))
+	help.size = Vector2(80, 48)
+	help.text = "空格射击\nP 暂停"
+
+
+func _build_pips() -> void:
+	for i in 20:
+		var pip := ColorRect.new()
+		pip.size = Vector2(10, 10)
+		pip.position = Vector2(436 + (i % 2) * 16, 84 + int(i / 2) * 14)
+		pip.color = Color("c8c2a0")
+		add_child(pip)
+		enemy_pips.append(pip)
 
 
 func _make_label(pos: Vector2, size: int, color: Color) -> Label:
@@ -50,11 +76,12 @@ func _make_label(pos: Vector2, size: int, color: Color) -> Label:
 	return label
 
 
-func refresh(stage: int, lives: int, score: int, remaining: int, alive: int) -> void:
-	stage_label.text = "关卡 %02d" % stage
-	lives_label.text = "生命 %d" % lives
-	enemy_label.text = "敌军 %d\n战场 %d" % [remaining, alive]
-	score_label.text = "得分\n%d" % score
+func refresh(stage: int, lives: int, score: int, remaining: int, _alive: int) -> void:
+	lives_label.text = "×%d" % lives
+	stage_label.text = "STAGE\n%02d" % stage
+	score_label.text = "%d" % score
+	for i in enemy_pips.size():
+		enemy_pips[i].visible = i < remaining
 
 
 func show_banner(text: String, sub: String = "") -> void:
