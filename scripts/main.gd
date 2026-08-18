@@ -33,7 +33,7 @@ func _ready() -> void:
 	hud.process_mode = Node.PROCESS_MODE_ALWAYS
 	add_child(hud)
 	spawn_timer = Timer.new()
-	spawn_timer.wait_time = 2.4
+	spawn_timer.wait_time = 3.4
 	spawn_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
 	spawn_timer.timeout.connect(_spawn_enemy)
 	add_child(spawn_timer)
@@ -101,7 +101,6 @@ func start_stage(next_stage: int) -> void:
 	spawn_queue = _stage_kinds(stage - 1)
 	_spawn_player()
 	spawn_timer.start()
-	_spawn_enemy()
 	_spawn_enemy()
 	_refresh_hud()
 	hud.show_banner("第 %d 关" % stage, "")

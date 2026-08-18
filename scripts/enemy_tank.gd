@@ -14,18 +14,18 @@ func configure(enemy_kind: Kind) -> void:
 	add_to_group("enemies")
 	match kind:
 		Kind.FAST:
-			move_speed = 128.0
-			fire_cooldown = 0.85
+			move_speed = 110.0
+			fire_cooldown = 1.15
 			max_hp = 1
 			setup_visual(GameArt.enemy_fast_tex)
 		Kind.ARMOR:
-			move_speed = 64.0
-			fire_cooldown = 1.1
+			move_speed = 58.0
+			fire_cooldown = 1.45
 			max_hp = 3
 			setup_visual(GameArt.enemy_armor_tex)
 		_:
-			move_speed = 78.0
-			fire_cooldown = 1.05
+			move_speed = 70.0
+			fire_cooldown = 1.35
 			max_hp = 1
 			setup_visual(GameArt.enemy_basic_tex)
 	hp = max_hp
@@ -42,10 +42,10 @@ func _physics_process(delta: float) -> void:
 	if _think <= 0.0:
 		_choose_heading()
 		_think = randf_range(0.8, 2.2)
-	if _can_see_player():
+	if _can_see_player() and global_position.distance_to(_player.global_position) < 180.0:
 		_face_player()
 		try_fire()
-	elif randf() < 0.012:
+	elif randf() < 0.006:
 		try_fire()
 	var before := global_position
 	velocity = heading_vector() * move_speed
@@ -56,7 +56,7 @@ func _physics_process(delta: float) -> void:
 
 
 func _choose_heading() -> void:
-	if _player and randf() < 0.45:
+	if _player and randf() < 0.22:
 		_face_player()
 		return
 	set_heading(randi() % 4 as Heading)
@@ -81,7 +81,7 @@ func _can_see_player() -> bool:
 		return false
 	var space := get_world_2d().direct_space_state
 	var query := PhysicsRayQueryParameters2D.create(global_position, _player.global_position)
-	query.collision_mask = 1
+	query.collision_mask = 1 | 8
 	query.exclude = [self]
 	var hit := space.intersect_ray(query)
 	return hit.is_empty()
