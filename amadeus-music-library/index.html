@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Amadeus Music Library</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div id="app">
+      <header class="topbar">
+        <div class="brand">
+          <strong>AMADEUS LIBRARY</strong>
+          <span>Worldline sessions · official index · local imports</span>
+        </div>
+        <div class="side-status">
+          <div id="meter">1.048596</div>
+          <div id="status-line">STANDBY</div>
+        </div>
+      </header>
+
+      <div class="layout">
+        <aside id="nav"></aside>
+        <section class="main">
+          <div id="toolbar"></div>
+          <div id="list"></div>
+        </section>
+      </div>
+
+      <footer class="transport">
+        <div class="now">
+          <div>
+            <p id="now-title">No signal</p>
+            <p id="now-sub">Select a Worldline Session</p>
+            <canvas id="viz"></canvas>
+          </div>
+          <div class="transport-controls">
+            <div class="buttons">
+              <button id="shuffle-btn" title="Shuffle">⇄</button>
+              <button id="prev-btn" title="Previous">⏮</button>
+              <button id="play-btn" title="Play / pause">▶</button>
+              <button id="next-btn" title="Next">⏭</button>
+              <button id="repeat-btn" title="Repeat">🔁</button>
+            </div>
+            <div class="seek-row">
+              <span id="time-cur">0:00</span>
+              <input id="seek" type="range" min="0" max="1000" value="0" />
+              <span id="time-dur">0:00</span>
+            </div>
+          </div>
+          <div class="side-status">
+            <div class="vol-row">
+              <span>VOL</span>
+              <input id="volume" type="range" min="0" max="100" value="82" />
+            </div>
+            <p class="kicker">Space play · ← → skip · drop files to import</p>
+          </div>
+        </div>
+      </footer>
+    </div>
+    <script type="module" src="./src/main.js"></script>
+  </body>
+</html>
