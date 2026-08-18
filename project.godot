@@ -1,0 +1,50 @@
+; Engine configuration file.
+config_version=5
+
+[animation]
+
+compatibility/default_parent_skeleton_in_mesh_instance_3d=true
+
+[application]
+
+config/name="坦克大战"
+config/description="Classic Battle City style tank game"
+config/version="1.0.0"
+run/main_scene="res://scenes/title.tscn"
+config/features=PackedStringArray("4.7", "Forward Plus")
+config/icon="res://icon.svg"
+
+[autoload]
+
+Boot="*res://scripts/boot.gd"
+
+[display]
+
+window/size/viewport_width=512
+window/size/viewport_height=416
+window/size/window_width_override=1024
+window/size/window_height_override=832
+window/stretch/mode="viewport"
+window/stretch/aspect="keep"
+window/vsync/vsync_mode=0
+
+[layer_names]
+
+2d_physics/layer_1="world"
+2d_physics/layer_2="tanks"
+2d_physics/layer_3="bullets"
+2d_physics/layer_4="eagle"
+2d_physics/layer_5="water"
+
+[physics]
+
+2d/default_gravity=0.0
+
+[rendering]
+
+renderer/rendering_method="gl_compatibility"
+renderer/rendering_method.mobile="gl_compatibility"
+textures/canvas_textures/default_texture_filter=0
+2d/snap/snap_2d_transforms_to_pixel=true
+2d/snap/snap_2d_vertices_to_pixel=true
+environment/defaults/default_clear_color=Color(0.04, 0.04, 0.05, 1)
