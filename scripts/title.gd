@@ -56,7 +56,7 @@ func _ready() -> void:
 	tw.tween_property(prompt, "modulate:a", 1.0, 0.6)
 
 	var help := Label.new()
-	help.text = "WASD / 方向键 移动    空格 / J 射击\n摧毁全部敌军，保护老鹰基地\n3 关 · 砖墙可打碎 · 钢墙无法摧毁"
+	help.text = "WASD / 方向键 移动    空格 / J 射击\n35 关原作地图 · 四种敌军 · 星星升级\n闪光坦克掉落道具，保护老鹰基地"
 	help.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	help.position = Vector2(40, 318)
 	help.size = Vector2(432, 70)

@@ -37,7 +37,7 @@ func _ready() -> void:
 	hint.visible = false
 
 	var help := _make_label(Vector2(428, 250), 11, Color("8a8a96"))
-	help.text = "WASD 移动\n空格 射击\nP 暂停\nEnter 重开"
+	help.text = "WASD 移动\n空格 射击\nP 暂停\n闪光坦克\n掉落道具"
 
 
 func _make_label(pos: Vector2, size: int, color: Color) -> Label:
@@ -51,7 +51,7 @@ func _make_label(pos: Vector2, size: int, color: Color) -> Label:
 
 
 func refresh(stage: int, lives: int, score: int, remaining: int, alive: int) -> void:
-	stage_label.text = "关卡 %d" % stage
+	stage_label.text = "关卡 %02d" % stage
 	lives_label.text = "生命 %d" % lives
 	enemy_label.text = "敌军 %d\n战场 %d" % [remaining, alive]
 	score_label.text = "得分\n%d" % score

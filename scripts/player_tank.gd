@@ -1,16 +1,66 @@
 class_name PlayerTank
 extends Tank
 
+var star_level := 0
+var _slide := Vector2.ZERO
+
 
 func _ready() -> void:
 	team = 0
+	add_to_group("player")
+	apply_stars(0)
+	set_heading(Heading.UP)
+	grant_invincible(2.25)
+
+
+func apply_stars(level: int) -> void:
+	star_level = clampi(level, 0, 3)
 	move_speed = 96.0
-	fire_cooldown = 0.38
 	max_hp = 1
 	hp = 1
-	add_to_group("player")
-	setup_visual(GameArt.player_tex)
-	set_heading(Heading.UP)
+	match star_level:
+		0:
+			fire_cooldown = 0.3
+			bullet_speed = 260.0
+			bullet_power = 1
+			max_shots = 1
+			setup_visual(GameArt.player_tex)
+		1:
+			fire_cooldown = 0.2
+			bullet_speed = 340.0
+			bullet_power = 1
+			max_shots = 1
+			setup_visual(GameArt.player_star_tex)
+		2:
+			fire_cooldown = 0.2
+			bullet_speed = 340.0
+			bullet_power = 1
+			max_shots = 2
+			setup_visual(GameArt.player_star_tex)
+		_:
+			fire_cooldown = 0.2
+			bullet_speed = 340.0
+			bullet_power = 3
+			max_shots = 2
+			setup_visual(GameArt.player_star_tex)
+			if sprite:
+				sprite.modulate = Color(1.15, 1.15, 0.75)
+
+
+func upgrade() -> void:
+	if star_level >= 3:
+		var game := get_tree().get_first_node_in_group("game")
+		if game and game.has_method("add_score"):
+			game.add_score(5000)
+		return
+	apply_stars(star_level + 1)
+
+
+func _on_ice() -> bool:
+	for node in get_tree().get_nodes_in_group("ice"):
+		if node is Node2D and global_position.distance_to((node as Node2D).global_position) < 14.0:
+			return true
+	return false
 
 
 func _physics_process(_delta: float) -> void:
@@ -30,7 +80,14 @@ func _physics_process(_delta: float) -> void:
 	elif Input.is_action_pressed("move_right"):
 		set_heading(Heading.RIGHT)
 		next = Vector2.RIGHT
-	velocity = next * move_speed
+	if next != Vector2.ZERO:
+		_slide = next
+		velocity = next * move_speed
+	elif _on_ice():
+		velocity = _slide * move_speed
+	else:
+		velocity = Vector2.ZERO
+		_slide = Vector2.ZERO
 	move_and_slide()
 	if Input.is_action_just_pressed("fire"):
 		try_fire()

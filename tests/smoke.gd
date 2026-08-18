@@ -3,6 +3,20 @@ extends SceneTree
 
 func _initialize() -> void:
 	GameArt.setup()
+	if StageBook.COUNT != 35 or StageBook.MAPS.size() != 35 or StageBook.BOTS.size() != 35:
+		push_error("stage book must have 35 maps and bot queues")
+		quit(1)
+		return
+	for i in StageBook.COUNT:
+		var lines := StageBook.map_text(i).split("\n", false)
+		if lines.size() != 26 or lines[0].length() != 26:
+			push_error("stage %d map is not 26x26" % (i + 1))
+			quit(1)
+			return
+		if StageBook.bot_queue(i).size() != 20:
+			push_error("stage %d bot queue is not 20" % (i + 1))
+			quit(1)
+			return
 	var title_ps := load("res://scenes/title.tscn") as PackedScene
 	if title_ps == null:
 		push_error("title.tscn failed to load")

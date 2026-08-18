@@ -7,9 +7,12 @@ static var player_tex: Texture2D
 static var enemy_basic_tex: Texture2D
 static var enemy_fast_tex: Texture2D
 static var enemy_armor_tex: Texture2D
+static var enemy_power_tex: Texture2D
+static var player_star_tex: Texture2D
 static var brick_tex: Texture2D
 static var steel_tex: Texture2D
 static var water_tex: Texture2D
+static var ice_tex: Texture2D
 static var bush_tex: Texture2D
 static var eagle_tex: Texture2D
 static var eagle_dead_tex: Texture2D
@@ -31,9 +34,12 @@ static func setup() -> void:
 	enemy_basic_tex = _tank(Color("c8c2a0"), Color("8a8468"), Color("f0ead0"))
 	enemy_fast_tex = _tank(Color("c44a3a"), Color("8a2a22"), Color("f0c070"))
 	enemy_armor_tex = _tank(Color("4a6a9a"), Color("2a4068"), Color("d0d8e8"))
+	enemy_power_tex = _tank(Color("d4a02a"), Color("8a6818"), Color("f0e080"))
+	player_star_tex = _tank(Color("4cbc48"), Color("2f8a2c"), Color("fff08a"))
 	brick_tex = _brick()
 	steel_tex = _steel()
 	water_tex = _water()
+	ice_tex = _ice()
 	bush_tex = _bush()
 	eagle_tex = _eagle(false)
 	eagle_dead_tex = _eagle(true)
@@ -102,6 +108,53 @@ static func _steel() -> Texture2D:
 	_px(img, Rect2i(0, TILE - 2, TILE, 2), Color("3a3a44"))
 	_px(img, Rect2i(TILE - 2, 0, 2, TILE), Color("3a3a44"))
 	_px(img, Rect2i(5, 5, 6, 6), Color("b0b0ba"))
+	return ImageTexture.create_from_image(img)
+
+
+static func _ice() -> Texture2D:
+	var img := Image.create(TILE, TILE, false, Image.FORMAT_RGBA8)
+	img.fill(Color("b8d4e8"))
+	_px(img, Rect2i(1, 2, 6, 2), Color("e8f4ff"))
+	_px(img, Rect2i(8, 7, 7, 2), Color("e8f4ff"))
+	_px(img, Rect2i(2, 12, 8, 2), Color("8cb0c8"))
+	return ImageTexture.create_from_image(img)
+
+
+static func powerup_tex(kind: int) -> Texture2D:
+	var img := Image.create(16, 16, false, Image.FORMAT_RGBA8)
+	img.fill(Color(0, 0, 0, 0))
+	_px(img, Rect2i(0, 0, 16, 16), Color("10100c"))
+	_px(img, Rect2i(1, 1, 14, 14), Color("d8c878"))
+	_px(img, Rect2i(2, 2, 12, 12), Color("2a2418"))
+	match clampi(kind, 0, 5):
+		0:
+			_px(img, Rect2i(4, 5, 8, 7), Color("3d8f3a"))
+			_px(img, Rect2i(5, 3, 2, 4), Color("c8c86a"))
+			_px(img, Rect2i(9, 3, 2, 4), Color("c8c86a"))
+		1:
+			_px(img, Rect2i(7, 3, 2, 10), Color("f0d060"))
+			_px(img, Rect2i(3, 7, 10, 2), Color("f0d060"))
+			_px(img, Rect2i(4, 4, 2, 2), Color("fff0a0"))
+			_px(img, Rect2i(10, 4, 2, 2), Color("fff0a0"))
+			_px(img, Rect2i(4, 10, 2, 2), Color("fff0a0"))
+			_px(img, Rect2i(10, 10, 2, 2), Color("fff0a0"))
+		2:
+			_px(img, Rect2i(6, 3, 4, 9), Color("c44a3a"))
+			_px(img, Rect2i(5, 10, 6, 3), Color("8a2a22"))
+			_px(img, Rect2i(7, 2, 2, 2), Color("f0c070"))
+		3:
+			_px(img, Rect2i(5, 4, 6, 8), Color("6aa0e0"))
+			_px(img, Rect2i(7, 6, 2, 2), Color("fff8d0"))
+			_px(img, Rect2i(4, 7, 2, 2), Color("d0e8ff"))
+			_px(img, Rect2i(10, 7, 2, 2), Color("d0e8ff"))
+		4:
+			_px(img, Rect2i(4, 6, 8, 6), Color("d0d0d8"))
+			_px(img, Rect2i(5, 3, 6, 4), Color("b0b0ba"))
+			_px(img, Rect2i(6, 8, 4, 2), Color("8a8a96"))
+		_:
+			_px(img, Rect2i(4, 9, 8, 3), Color("c9a227"))
+			_px(img, Rect2i(10, 4, 2, 6), Color("8a7018"))
+			_px(img, Rect2i(7, 3, 5, 2), Color("e6c84a"))
 	return ImageTexture.create_from_image(img)
 
 
