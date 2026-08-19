@@ -357,6 +357,17 @@
   (when id
     (get @games (str id))))
 
+(defn- click-keep
+  "Resolve the opening Keep prompt through process-action so it leaves the queue."
+  [state side]
+  (loop [guard 0]
+    (when-let [p (or (prompt-of state side)
+                     (first (get-in @state [side :prompt])))]
+      (when-let [ch (and (< guard 4)
+                         (some #(when (= "Keep" (choice-label %)) %) (:choices p)))]
+        (pa/process-action "choice" state side {:choice {:uuid (str (:uuid ch))}})
+        (recur (inc guard))))))
+
 (defn- begin-game! [agenda-goal]
   (let [corp-deck (deck-from-codes beginner-corp-id beginner-corp-cards)
         runner-deck (deck-from-codes beginner-runner-id beginner-runner-cards)
@@ -371,10 +382,8 @@
                           {:side "Runner"
                            :user {:username "Runner"}
                            :deck runner-deck}]})]
-    (when-not (= :keep (get-in @state [:corp :keep]))
-      (set-up/keep-hand state :corp nil))
-    (when-not (= :keep (get-in @state [:runner :keep]))
-      (set-up/keep-hand state :runner nil))
+    (click-keep state :corp)
+    (click-keep state :runner)
     (when (or (:end-turn @state) (zero? (or (:turn @state) 0)))
       (turns/start-turn state :corp nil))
     (swap! state assoc-in [:corp :agenda-point-req] agenda-goal)
