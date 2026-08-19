@@ -11,7 +11,7 @@ static func get_link(state: NRState, _side: Variant = null) -> int:
 
 static func update_link(state: NRState, _side: Variant = null) -> bool:
 	var id: Dictionary = state.get_in(["runner", "identity"], {})
-	var old_link := get_link(state)
+	var old_link = get_link(state)
 	var new_link: int = int(id.get("baselink", 0)) + NREffects.sum_effects(state, "runner", "user-link") + NREffects.sum_effects(state, "runner", "link", id)
 	if old_link != new_link:
 		state.assoc_in(["runner", "link"], new_link)

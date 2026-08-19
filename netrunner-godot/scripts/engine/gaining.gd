@@ -3,7 +3,7 @@ extends RefCounted
 ## Gain/lose clicks, credits, and generic attributes. Port of game.core.gaining.
 
 static func deduct(state: NRState, side: Variant, attr: String, value: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	if value is Dictionary:
 		for subattr in value:
 			var amt: int = int(value[subattr])
@@ -27,7 +27,7 @@ static func deduct(state: NRState, side: Variant, attr: String, value: Variant) 
 
 
 static func gain(state: NRState, side: Variant, cost_type: String, amount: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	if amount is Dictionary:
 		for subtype in amount:
 			state.update_in([s, cost_type, subtype], NRUtil.inc_n(int(amount[subtype])), 0)
@@ -45,7 +45,7 @@ static func gain(state: NRState, side: Variant, cost_type: String, amount: Varia
 
 
 static func lose(state: NRState, side: Variant, cost_type: String, amount: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	if str(amount) == "all" or NRUtil.kw_eq(amount, "all"):
 		state.update_in(["stats", s, "lose", cost_type], NRUtil.inc_n(int(state.get_in([s, cost_type], 0))), 0)
 		state.assoc_in([s, cost_type], 0)
@@ -58,11 +58,11 @@ static func lose(state: NRState, side: Variant, cost_type: String, amount: Varia
 
 static func gain_credits(state: NRState, side: Variant, eid: Dictionary, amount: int, args: Dictionary = {}) -> void:
 	if amount > 0:
-		var s := NRUtil.to_side(side)
-		var event := "corp-credit-gain" if s == "corp" else "runner-credit-gain"
+		var s = NRUtil.to_side(side)
+		var event = "corp-credit-gain" if s == "corp" else "runner-credit-gain"
 		gain(state, s, "credit", amount)
 		NREngine.queue_event(state, event, {"side": s, "amount": amount, "source": eid.get("source"), "action": args.get("action")})
-		if bool(args.get("suppress-checkpoint", false)):
+		if NRUtil.truthy(args.get("suppress-checkpoint", false)):
 			NREid.effect_completed(state, null, eid)
 		else:
 			NREngine.checkpoint(state, eid)
@@ -71,9 +71,9 @@ static func gain_credits(state: NRState, side: Variant, eid: Dictionary, amount:
 
 
 static func lose_credits(state: NRState, side: Variant, eid: Dictionary, amount: Variant, args: Dictionary = {}) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var credits: int = int(state.side_get(s, "credit", 0))
-	var all := NRUtil.kw_eq(amount, "all") or str(amount) == "all"
+	var all = NRUtil.kw_eq(amount, "all") or str(amount) == "all"
 	if amount != null and (all or (NRUtil.is_number(amount) and int(amount) > 0)) and credits > 0 and not NREffects.any_effects(state, s, "cannot-lose-credits"):
 		lose(state, s, "credit", amount)
 		if s == "runner" and all:
@@ -85,19 +85,19 @@ static func lose_credits(state: NRState, side: Variant, eid: Dictionary, amount:
 
 static func gain_clicks(state: NRState, side: Variant, amount: int, args: Dictionary = {}) -> void:
 	if amount > 0:
-		var s := NRUtil.to_side(side)
+		var s = NRUtil.to_side(side)
 		gain(state, s, "click", amount)
 		NREngine.trigger_event(state, s, ("corp-click-gain" if s == "corp" else "runner-click-gain"), {"amount": amount, "args": args})
 
 
 static func lose_clicks(state: NRState, side: Variant, amount: Variant, args: Dictionary = {}) -> void:
-	var all := NRUtil.kw_eq(amount, "all") or str(amount) == "all"
+	var all = NRUtil.kw_eq(amount, "all") or str(amount) == "all"
 	if amount != null and (all or (NRUtil.is_number(amount) and int(amount) > 0)):
-		var s := NRUtil.to_side(side)
+		var s = NRUtil.to_side(side)
 		lose(state, s, "click", amount)
 		NREngine.trigger_event(state, s, ("corp-click-loss" if s == "corp" else "runner-click-loss"), {"amount": amount, "args": args})
 
 
 static func base_mod_size(state: NRState, side: Variant, prop: String) -> int:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	return int(state.get_in([s, prop, "base"], 0)) + int(state.get_in([s, prop, "mod"], 0))

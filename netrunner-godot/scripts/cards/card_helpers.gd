@@ -7,7 +7,7 @@ extends RefCounted
 
 
 static func merge_cdef(printed: Dictionary, logic: Dictionary) -> Dictionary:
-	var out := printed.duplicate(true)
+	var out = printed.duplicate(true)
 	out.merge(logic, true)
 	return out
 
@@ -17,7 +17,7 @@ static func ctx(targets: Variant) -> Dictionary:
 
 
 static func first_target(targets: Variant) -> Variant:
-	var c := ctx(targets)
+	var c = ctx(targets)
 	if not c.is_empty():
 		if c.has("value"):
 			return c.get("value")
@@ -36,7 +36,7 @@ static func this_card_run(state: NRState, card: Variant, targets: Variant) -> bo
 		return false
 	var run = state.getv("run")
 	if not (run is Dictionary):
-		var c := ctx(targets)
+		var c = ctx(targets)
 		run = {"run-id": c.get("run-id"), "source-card": c.get("source-card")}
 	var src = run.get("source-card")
 	if src is Dictionary and NRUtil.same_card(card, src):
@@ -68,7 +68,7 @@ static func cost_vec(cost: Variant) -> Array:
 
 static func run_server_ability(server: Variant, extra: Dictionary = {}) -> Dictionary:
 	var events: Array = extra.get("events", [])
-	var ab := {
+	var ab = {
 		"async": true,
 		"makes-run": true,
 		"label": "run %s" % NRServers.zone_to_name(server),
@@ -80,7 +80,7 @@ static func run_server_ability(server: Variant, extra: Dictionary = {}) -> Dicti
 				NREngine.register_events(state, side, card, events)
 			NRRuns.make_run(state, side, eid, server, card),
 	}
-	var rest := extra.duplicate(true)
+	var rest = extra.duplicate(true)
 	rest.erase("events")
 	ab.merge(rest, true)
 	return ab
@@ -88,7 +88,7 @@ static func run_server_ability(server: Variant, extra: Dictionary = {}) -> Dicti
 
 static func run_any_server_ability(extra: Dictionary = {}) -> Dictionary:
 	var events: Array = extra.get("events", [])
-	var ab := {
+	var ab = {
 		"async": true,
 		"prompt": "Choose a server",
 		"choices": func(state, side, eid, card, _t):
@@ -104,7 +104,7 @@ static func run_any_server_ability(extra: Dictionary = {}) -> Dictionary:
 				NREngine.register_events(state, side, card, events)
 			NRRuns.make_run(state, side, eid, first_target(targets), card),
 	}
-	var rest := extra.duplicate(true)
+	var rest = extra.duplicate(true)
 	rest.erase("events")
 	ab.merge(rest, true)
 	return ab
@@ -148,7 +148,7 @@ static func run_remote_server_ability() -> Dictionary:
 
 static func run_server_from_choices_ability(choices: Array, extra: Dictionary = {}) -> Dictionary:
 	var events: Array = extra.get("events", [])
-	var ab := {
+	var ab = {
 		"prompt": "Choose a server",
 		"choices": func(state, _side, _eid, _card, _t):
 			var out: Array = []
@@ -164,7 +164,7 @@ static func run_server_from_choices_ability(choices: Array, extra: Dictionary = 
 				NREngine.register_events(state, side, card, events)
 			NRRuns.make_run(state, side, eid, first_target(targets), card),
 	}
-	var rest := extra.duplicate(true)
+	var rest = extra.duplicate(true)
 	rest.erase("events")
 	ab.merge(rest, true)
 	return ab
@@ -173,7 +173,7 @@ static func run_server_from_choices_ability(choices: Array, extra: Dictionary = 
 static func successful_run_replace_breach(props: Dictionary) -> Dictionary:
 	var ability: Dictionary = props.get("ability", {})
 	var attacked = props.get("target-server")
-	var use_this: bool = bool(props.get("this-card-run", false))
+	var use_this: bool = NRUtil.truthy(props.get("this-card-run", false))
 	return {
 		"event": "successful-run",
 		"duration": props.get("duration"),
@@ -182,12 +182,12 @@ static func successful_run_replace_breach(props: Dictionary) -> Dictionary:
 		"req": func(state, _side, _eid, card, targets):
 			if use_this and not this_card_run(state, card, targets):
 				return false
-			var c := ctx(targets)
+			var c = ctx(targets)
 			var server = c.get("server", state.get_in(["run", "server"]))
-			var kw := NRServers.unknown_to_kw(NRUtil.first_of(NRUtil.as_array(server)))
+			var kw = NRServers.unknown_to_kw(NRUtil.first_of(NRUtil.as_array(server)))
 			if attacked == null:
 				return true
-			var atk := NRUtil.to_kw(attacked)
+			var atk = NRUtil.to_kw(attacked)
 			if atk in ["hq", "rd", "archives"]:
 				return kw == atk
 			if atk == "remote":
@@ -209,7 +209,7 @@ static func drain_credits(draining_side: Variant, victim_side: Variant, qty: int
 			var have: int = int(state.get_in([NRUtil.to_side(victim_side), "credit"], 0))
 			var drain: int = mini(have, qty)
 			var gain: int = drain * multiplier
-			var m := "force the %s to lose %d [Credits], gain %d [Credits]" % [NRUtil.side_str(victim_side), drain, gain]
+			var m = "force the %s to lose %d [Credits], gain %d [Credits]" % [NRUtil.side_str(victim_side), drain, gain]
 			if tags_to_gain > 0:
 				m += ", and take %d tag%s" % [tags_to_gain, "s" if tags_to_gain != 1 else ""]
 			return m,
@@ -250,7 +250,7 @@ static func break_sub(cost: Variant, n: Variant, subtypes: Variant = null, args:
 	var n_num: int = int(n) if NRUtil.is_number(n) else 0
 	var label: String = str(args.get("label", ""))
 	if label == "":
-		var ice_bit := "" if subtype_set == ["All"] else " " + " or ".join(subtype_set)
+		var ice_bit = "" if subtype_set == ["All"] else " " + " or ".join(subtype_set)
 		if n_num <= 0:
 			label = "break any number of%s subroutines" % ice_bit
 		elif n_num == 1:
@@ -269,7 +269,7 @@ static func break_sub(cost: Variant, n: Variant, subtypes: Variant = null, args:
 			if not (ice is Dictionary) or not NRIce.active_ice(state, ice):
 				return false
 			if not ("All" in subtype_set):
-				var ok := false
+				var ok = false
 				for st in subtype_set:
 					if NRCard.has_subtype(ice, str(st)):
 						ok = true
@@ -278,7 +278,7 @@ static func break_sub(cost: Variant, n: Variant, subtypes: Variant = null, args:
 					return false
 			if NRCard.has_subtype(card, "Icebreaker") and NRIce.get_strength(ice) > NRIce.get_strength(card):
 				return false
-			if extra_req is Callable and not bool(extra_req.call(state, side, eid, card, targets)):
+			if extra_req is Callable and not NRUtil.truthy(extra_req.call(state, side, eid, card, targets)):
 				return false
 			return true,
 		"cost": costs,
@@ -292,7 +292,7 @@ static func break_sub(cost: Variant, n: Variant, subtypes: Variant = null, args:
 			for sub in ice.get("subroutines", []):
 				if broken.size() >= limit:
 					break
-				if sub is Dictionary and not bool(sub.get("broken")) and sub.get("resolve", true) != false:
+				if sub is Dictionary and not NRUtil.truthy(sub.get("broken")) and sub.get("resolve", true) != false:
 					NRIce.break_subroutine_bang(state, ice, sub, card)
 					broken.append(sub)
 			ice = NRIce.get_current_ice(state)
@@ -308,10 +308,10 @@ static func break_sub(cost: Variant, n: Variant, subtypes: Variant = null, args:
 
 static func strength_pump(cost: Variant, strength: int, duration: Variant = "end-of-encounter", args: Dictionary = {}) -> Dictionary:
 	var costs: Array = cost_vec(cost)
-	var dur := str(duration) if duration != null else "end-of-encounter"
+	var dur = str(duration) if duration != null else "end-of-encounter"
 	if dur.begins_with(":"):
 		dur = dur.substr(1)
-	var dur_str := ""
+	var dur_str = ""
 	if dur == "end-of-run":
 		dur_str = " for the remainder of the run"
 	elif dur == "end-of-turn":
@@ -322,7 +322,7 @@ static func strength_pump(cost: Variant, strength: int, duration: Variant = "end
 		"cost": costs,
 		"pump": strength,
 		"msg": func(state, _s, _e, card, _t):
-			var cur := NRIce.get_strength(card)
+			var cur = NRIce.get_strength(card)
 			return "increase its strength from %d to %d%s" % [cur, cur + strength, dur_str],
 		"effect": func(state, side, _eid, card, _t):
 			NRIce.pump(state, side, card, strength, dur),
@@ -352,7 +352,7 @@ static func take_credits(state: NRState, side: Variant, eid: Dictionary, card: D
 
 
 static func take_n_credits_ability(n: int, extra: Dictionary = {}) -> Dictionary:
-	var ab := {
+	var ab = {
 		"label": "Take %d [Credits] from this card" % n,
 		"msg": func(_s, _sd, _e, card, _t):
 			return "gain %d [Credits]" % mini(n, NRCard.get_counters(card, "credit")),
@@ -390,7 +390,7 @@ static func getk(obj: Variant, key: Variant, default_value: Variant = null) -> V
 	if obj is Dictionary:
 		if obj.has(key):
 			return obj[key]
-		var ks := str(key)
+		var ks = str(key)
 		if obj.has(ks):
 			return obj[ks]
 		for k in obj.keys():

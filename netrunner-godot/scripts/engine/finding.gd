@@ -17,7 +17,7 @@ static func find_cid(cid: Variant, from_seq: Array) -> Variant:
 
 
 static func find_latest(state: NRState, card: Dictionary) -> Variant:
-	var side := NRUtil.to_side(card.get("side"))
+	var side = NRUtil.to_side(card.get("side"))
 	var pool: Array = NRBoard.all_installed(state, side)
 	for zone in ["hand", "discard", "deck", "rfg", "scored"]:
 		pool.append_array(state.get_in(["corp", zone], []))

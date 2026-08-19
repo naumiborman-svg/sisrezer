@@ -33,7 +33,7 @@ func inc_in(path: Array, n: int = 1) -> void:
 
 
 func player(side: Variant) -> Dictionary:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var p = data.get(s, {})
 	return p if p is Dictionary else {}
 
@@ -53,7 +53,7 @@ func make_rid() -> int:
 
 
 static func new_state(gameid: Variant, room: Variant, fmt: Variant, now: Variant, options: Dictionary, corp: Dictionary, runner: Dictionary) -> NRState:
-	var st := NRState.new()
+	var st = NRState.new()
 	st.data = {
 		"gameid": gameid,
 		"log": {"public": [], "corp": [], "runner": []},

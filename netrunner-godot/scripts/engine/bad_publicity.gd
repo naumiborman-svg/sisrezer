@@ -12,14 +12,14 @@ static func gain_bad_publicity(state: NRState, side: Variant, eid: Dictionary, n
 	NREid.wait_for(state, eid, func(pe):
 		NRPrevention.resolve_bad_pub_prevention(state, side, pe, n, args)
 	, func(async_result):
-		var remaining := n
+		var remaining = n
 		if async_result is Dictionary:
 			remaining = int(async_result.get("remaining", n))
 		if remaining > 0:
 			NRGaining.gain(state, "corp", "bad-publicity", remaining)
 			NRToasts.toast(state, "corp", "Took %d bad publicity!" % remaining, "info")
 			NREngine.queue_event(state, "corp-gain-bad-publicity", {"amount": remaining})
-			if bool(args.get("suppress-checkpoint", false)):
+			if NRUtil.truthy(args.get("suppress-checkpoint", false)):
 				NREid.effect_completed(state, side, eid)
 			else:
 				NREngine.checkpoint(state, eid)
@@ -33,7 +33,7 @@ static func lose_bad_publicity(state: NRState, side: Variant, eid: Dictionary, n
 		n = int(state.get_in(["corp", "bad-publicity", "base"], 0))
 	n = mini(int(n), int(state.get_in(["corp", "bad-publicity", "base"], 0)))
 	NRGaining.lose(state, "corp", "bad-publicity", n)
-	if bool(args.get("no-event", false)):
+	if NRUtil.truthy(args.get("no-event", false)):
 		NREid.effect_completed(state, side, eid)
 	else:
 		NREngine.trigger_event_sync(state, side, eid, "corp-lose-bad-publicity", {"amount": n, "side": side})

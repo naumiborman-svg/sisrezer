@@ -41,7 +41,7 @@ static func rez_cost(state: NRState, side: Variant, card: Dictionary, args: Dict
 
 static func rez_additional_cost_bonus(state: NRState, side: Variant, card: Dictionary, pred: Callable = Callable()) -> Array:
 	var extra = NRCardDefs.card_def(card).get("additional-cost") if not NREffects.is_disabled_reg(state, card) else null
-	var costs := NRPayment.merge_costs([extra, NREffects.get_effects(state, side, "rez-additional-cost", card)])
+	var costs = NRPayment.merge_costs([extra, NREffects.get_effects(state, side, "rez-additional-cost", card)])
 	if pred.is_valid():
 		var out: Array = []
 		for c in costs:
@@ -70,7 +70,7 @@ static func trash_cost(state: NRState, side: Variant, card: Dictionary, args: Di
 
 
 static func install_cost(state: NRState, side: Variant, card: Dictionary, args: Dictionary = {}, targets: Variant = null) -> int:
-	var total := 0
+	var total = 0
 	if NRCard.runner(card):
 		total += int(card.get("cost", 0))
 	total += int(args.get("cost-bonus", 0))
@@ -103,7 +103,7 @@ static func run_additional_cost_bonus(state: NRState, side: Variant, card: Varia
 
 
 static func has_trash_ability(card: Dictionary) -> bool:
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	var pools: Array = [cdef.get("abilities", []), cdef.get("events", []), [NRUtil.get_in(cdef, ["interactions", "access-ability"])]]
 	for pool in pools:
 		if not (pool is Array):

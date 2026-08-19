@@ -68,7 +68,7 @@ static func effect_completed(state: NRState, _side: Variant, eid: Dictionary) ->
 
 
 static func make_result(eid: Dictionary, result: Variant) -> Dictionary:
-	var e := eid.duplicate(true)
+	var e = eid.duplicate(true)
 	e["result"] = result
 	return e
 
@@ -78,7 +78,7 @@ static func complete_with_result(state: NRState, side: Variant, eid: Dictionary,
 
 
 static func wait_for(state: NRState, parent_eid: Dictionary, start: Callable, then: Callable) -> void:
-	var new_eid := make_eid(state, parent_eid)
+	var new_eid = make_eid(state, parent_eid)
 	register_effect_completed(state, new_eid, func(done_eid: Dictionary):
 		then.call(done_eid.get("result"))
 	)

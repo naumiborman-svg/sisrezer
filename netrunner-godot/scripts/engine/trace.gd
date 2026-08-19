@@ -11,9 +11,9 @@ static func init_trace(state: NRState, side: Variant, eid: Dictionary, card: Dic
 
 
 static func _corp_boost(state: NRState, eid: Dictionary, card: Dictionary, base: int, trace: Dictionary, targets: Variant) -> void:
-	var credits := NRCosts.total_available_credits(state, "corp", eid, card)
+	var credits = NRCosts.total_available_credits(state, "corp", eid, card)
 	NRPrompts.show_trace_prompt(state, "corp", eid, card, "Boost trace strength? (base %d)" % base, func(choice):
-		var boost := int(choice.get("value", choice) if choice is Dictionary else choice)
+		var boost = int(choice.get("value", choice) if choice is Dictionary else choice)
 		boost = clampi(boost, 0, credits)
 		state.assoc_in(["trace", "corp"], boost)
 		NREid.wait_for(state, eid, func(pe):
@@ -25,10 +25,10 @@ static func _corp_boost(state: NRState, eid: Dictionary, card: Dictionary, base:
 
 
 static func _runner_link(state: NRState, eid: Dictionary, card: Dictionary, strength: int, trace: Dictionary, targets: Variant) -> void:
-	var link := NRLink.get_link(state)
-	var credits := NRCosts.total_available_credits(state, "runner", eid, card)
+	var link = NRLink.get_link(state)
+	var credits = NRCosts.total_available_credits(state, "runner", eid, card)
 	NRPrompts.show_trace_prompt(state, "runner", eid, card, "Boost link? (base link %d vs trace %d)" % [link, strength], func(choice):
-		var boost := int(choice.get("value", choice) if choice is Dictionary else choice)
+		var boost = int(choice.get("value", choice) if choice is Dictionary else choice)
 		boost = clampi(boost, 0, credits)
 		state.assoc_in(["trace", "runner"], boost)
 		NREid.wait_for(state, eid, func(pe):
@@ -40,7 +40,7 @@ static func _runner_link(state: NRState, eid: Dictionary, card: Dictionary, stre
 
 
 static func _resolve_trace(state: NRState, eid: Dictionary, card: Dictionary, strength: int, link: int, trace: Dictionary, targets: Variant) -> void:
-	var successful := strength >= link
+	var successful = strength >= link
 	NRSay.system_say(state, null, "Trace attempt: Corp %d vs Runner %d — %s" % [strength, link, "success" if successful else "failure"])
 	var ability = trace.get("successful") if successful else trace.get("unsuccessful")
 	var kicker = trace.get("kicker")

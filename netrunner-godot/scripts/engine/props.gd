@@ -10,16 +10,16 @@ static func add_prop(state: NRState, side: Variant, eid: Dictionary, card: Dicti
 	c = c.duplicate(true)
 	c[prop_type] = int(c.get(prop_type, 0)) + n
 	var updated = NRUpdate.update_card(state, side, c)
-	var payload := {"counter-type": prop_type, "amount": n, "placed": args.get("placed")}
+	var payload = {"counter-type": prop_type, "amount": n, "placed": args.get("placed")}
 	if prop_type == "advance-counter":
 		if updated is Dictionary and NRCard.ice(updated) and NRCard.rezzed(updated):
 			NRIce.update_ice_strength(state, side, updated)
 		payload["card"] = NRCard.get_card(state, updated if updated is Dictionary else c)
-		NREngine.queue_event(state, ("advancement-placed" if bool(args.get("placed")) else "advance"), payload)
+		NREngine.queue_event(state, ("advancement-placed" if NRUtil.truthy(args.get("placed")) else "advance"), payload)
 	else:
 		payload["card"] = NRCard.get_card(state, updated if updated is Dictionary else c)
 		NREngine.queue_event(state, "counter-added", payload)
-	if not bool(args.get("suppress-checkpoint", false)):
+	if not NRUtil.truthy(args.get("suppress-checkpoint", false)):
 		NREngine.checkpoint(state, eid)
 	else:
 		NREid.effect_completed(state, side, eid)
@@ -39,19 +39,19 @@ static func add_counter(state: NRState, side: Variant, eid: Dictionary, card: Di
 		ctr = {}
 	else:
 		ctr = ctr.duplicate(true)
-	var key := NRUtil.to_kw(prop_type)
+	var key = NRUtil.to_kw(prop_type)
 	ctr[key] = int(ctr.get(key, 0)) + n
 	c["counter"] = ctr
 	var updated = NRUpdate.update_card(state, side, c)
 	NREngine.queue_event(state, "counter-added", {"card": updated, "counter-type": key, "amount": n, "placed": args.get("placed")})
-	if not bool(args.get("suppress-checkpoint", false)):
+	if not NRUtil.truthy(args.get("suppress-checkpoint", false)):
 		NREngine.checkpoint(state, eid)
 	else:
 		NREid.effect_completed(state, side, eid)
 
 
 static func set_prop(state: NRState, side: Variant, card: Dictionary, pairs: Dictionary) -> void:
-	var c := card.duplicate(true)
+	var c = card.duplicate(true)
 	for k in pairs:
 		c[k] = pairs[k]
 	NRUpdate.update_card(state, side, c)

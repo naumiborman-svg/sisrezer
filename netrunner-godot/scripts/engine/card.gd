@@ -11,7 +11,7 @@ static func get_title(card: Dictionary) -> String:
 
 
 static func get_nested_host(card: Dictionary) -> Dictionary:
-	var cur := card
+	var cur = card
 	while cur is Dictionary and cur.get("host") is Dictionary:
 		cur = cur["host"]
 	return cur
@@ -31,7 +31,7 @@ static func zone_eq(zone: Array, expected: Array) -> bool:
 
 
 static func in_server(card: Dictionary) -> bool:
-	var z := get_zone(card)
+	var z = get_zone(card)
 	return not z.is_empty() and NRUtil.to_kw(z[z.size() - 1]) == "content"
 
 
@@ -98,8 +98,8 @@ static func set_aside_visible(card: Dictionary, side: String) -> bool:
 	if not (vis is Dictionary):
 		return false
 	if NRUtil.to_side(side) == "corp":
-		return bool(vis.get("corp-can-see", false))
-	return bool(vis.get("runner-can-see", false))
+		return NRUtil.truthy(vis.get("corp-can-see", false))
+	return NRUtil.truthy(vis.get("runner-can-see", false))
 
 
 static func in_current(card: Dictionary) -> bool:
@@ -184,16 +184,12 @@ static func condition_counter(card: Dictionary) -> bool:
 
 
 static func expendable(state: NRState, card: Dictionary) -> bool:
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	return cdef.has("expend") and not NREffects.is_disabled_reg(state, card)
 
 
 static func basic_action(card: Dictionary) -> bool:
 	return is_type(card, "Basic Action")
-
-
-static func expendable(state: NRState, card: Dictionary) -> bool:
-	return NRCardDefs.card_def(card).has("expend") and not NREffects.is_disabled_reg(state, card)
 
 
 static func has_subtype(card: Dictionary, subtype: String) -> bool:
@@ -232,7 +228,7 @@ static func console(card: Dictionary) -> bool:
 
 
 static func unique(card: Dictionary) -> bool:
-	return bool(card.get("uniqueness", false))
+	return NRUtil.truthy(card.get("uniqueness", false))
 
 
 static func corp_installable_type(card: Dictionary) -> bool:
@@ -240,24 +236,24 @@ static func corp_installable_type(card: Dictionary) -> bool:
 
 
 static func rezzed(card: Dictionary) -> bool:
-	return bool(card.get("rezzed", false))
+	return NRUtil.truthy(card.get("rezzed", false))
 
 
 static func faceup(card: Dictionary) -> bool:
-	return bool(card.get("seen", false)) or rezzed(card)
+	return NRUtil.truthy(card.get("seen", false)) or rezzed(card)
 
 
 static func installed(card: Dictionary) -> bool:
 	if card.get("installed"):
 		return true
-	var z := get_zone(card)
+	var z = get_zone(card)
 	return not z.is_empty() and NRUtil.to_kw(z[0]) == "servers"
 
 
 static func facedown(card: Dictionary) -> bool:
 	if not condition_counter(card) and zone_eq(get_zone(card), ["rig", "facedown"]):
 		return true
-	return bool(card.get("facedown", false))
+	return NRUtil.truthy(card.get("facedown", false))
 
 
 static func active(card: Dictionary) -> bool:
@@ -289,7 +285,7 @@ static func get_agenda_points(card: Dictionary) -> int:
 
 
 static func can_be_advanced(card: Dictionary, state: NRState = null) -> bool:
-	var ok := false
+	var ok = false
 	if card_is(card, "advanceable", "always"):
 		ok = true
 	elif card_is(card, "advanceable", "while-rezzed") and rezzed(card):
@@ -335,7 +331,7 @@ static func get_card(state: NRState, card: Variant) -> Variant:
 			if sc is Dictionary and sc.get("cid") == cid:
 				return sc
 		return null
-	var side := NRUtil.to_side(c.get("side"))
+	var side = NRUtil.to_side(c.get("side"))
 	var coll = state.get_in([side] + zone, [])
 	if coll is Array:
 		for item in coll:
@@ -348,7 +344,7 @@ static func get_corp_installed_card(state: NRState, card: Dictionary) -> Variant
 	var zone: Array = NRUtil.zone_as_array(card.get("zone", []))
 	if zone.is_empty():
 		return null
-	var lastz := NRUtil.to_kw(zone[zone.size() - 1])
+	var lastz = NRUtil.to_kw(zone[zone.size() - 1])
 	if lastz != "ices" and lastz != "content":
 		return null
 	var servers: Dictionary = state.get_in(["corp", "servers"], {})
@@ -386,7 +382,7 @@ static func _search_hosted(card: Dictionary, target: Dictionary) -> Variant:
 static func card_index(state: NRState, card: Dictionary) -> Variant:
 	if card.has("index"):
 		return card["index"]
-	var z := get_zone(card)
+	var z = get_zone(card)
 	var coll = state.get_in(["corp"] + z, [])
 	if coll is Array:
 		for i in range(coll.size()):
@@ -398,7 +394,7 @@ static func card_index(state: NRState, card: Dictionary) -> Variant:
 static func is_public(card: Dictionary, side: Variant = null) -> bool:
 	if basic_action(card) or identity(card) or in_scored(card) or in_current(card) or in_play_area(card) or in_rfg(card) or in_destroyed(card):
 		return true
-	var s := NRUtil.to_side(side) if side != null else NRUtil.to_side(card.get("side"))
+	var s = NRUtil.to_side(side) if side != null else NRUtil.to_side(card.get("side"))
 	if set_aside_visible(card, s):
 		return true
 	if s == "corp":

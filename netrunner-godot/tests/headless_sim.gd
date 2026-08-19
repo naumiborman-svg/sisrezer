@@ -1,15 +1,23 @@
 extends Node
 ## Headless smoke test: boot engine, two stub players, start-turn / credit / install / run.
 
-var _ok := true
+var _ok = true
 var _failures: PackedStringArray = PackedStringArray()
 
 
 func _ready() -> void:
 	print("=== netrunner-godot headless smoke test ===")
+	print("Godot %s" % Engine.get_version_info().get("string", "?"))
 	NRCardsBasic.register()
+	NRCardsCorp.register()
+	NRCardsIdentities.register()
+	NRCardsEvents.register()
+	NRCardsHardware.register()
+	NRCardsPrograms.register()
+	NRCardsResources.register()
+	print("registered card titles: %d" % NRCardDefs.all_titles().size())
 	_register_stubs()
-	var state := NRSetUp.init_game({
+	var state = NRSetUp.init_game({
 		"gameid": "smoke-1",
 		"skip-mulligan": true,
 		"players": [

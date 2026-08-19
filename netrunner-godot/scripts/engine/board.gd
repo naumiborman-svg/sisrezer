@@ -35,8 +35,8 @@ static func runner_rig_cards(state: NRState) -> Array:
 
 
 static func get_all_cards(state: NRState) -> Array:
-	var installed_corp := corp_servers_cards(state)
-	var installed_runner := runner_rig_cards(state)
+	var installed_corp = corp_servers_cards(state)
+	var installed_runner = runner_rig_cards(state)
 	var zone_cards: Array = []
 	for side in ["corp", "runner"]:
 		for zone in ["deck", "hand", "discard", "current", "scored", "play-area", "rfg", "set-aside"]:
@@ -88,7 +88,7 @@ static func all_installed_runner_type(state: NRState, card_type: String) -> Arra
 
 
 static func all_active_installed(state: NRState, side: Variant) -> Array:
-	var installed := all_installed(state, side)
+	var installed = all_installed(state, side)
 	if NRUtil.to_side(side) == "runner":
 		var out: Array = []
 		for c in installed:
@@ -103,7 +103,7 @@ static func all_active_installed(state: NRState, side: Variant) -> Array:
 
 
 static func all_active(state: NRState, side: Variant) -> Array:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var cards: Array = [state.get_in([s, "identity"])]
 	cards.append_array(all_active_installed(state, s))
 	cards.append_array(state.get_in([s, "current"], []))
@@ -114,7 +114,7 @@ static func all_active(state: NRState, side: Variant) -> Array:
 		cards.append_array(state.get_in(["corp", "scored"], []))
 	var out: Array = []
 	for c in cards:
-		if c is Dictionary and not bool(c.get("disabled", false)):
+		if c is Dictionary and not NRUtil.truthy(c.get("disabled", false)):
 			out.append(c)
 	return out
 
@@ -145,7 +145,7 @@ static func get_remote_zones(state: NRState) -> Array:
 
 static func get_remotes(state: NRState) -> Dictionary:
 	var alls: Dictionary = state.get_in(["corp", "servers"], {})
-	var out := {}
+	var out = {}
 	for z in get_remote_zones(state):
 		if alls.has(z):
 			out[z] = alls[z]
@@ -171,13 +171,13 @@ static func server_list_exclude(state: NRState, exclude_list: Array) -> Array:
 static func installable_servers(state: NRState, card: Dictionary) -> Array:
 	var max_servers = null
 	var id: Dictionary = state.get_in(["corp", "identity"], {})
-	var cdef := NRCardDefs.card_def(id)
+	var cdef = NRCardDefs.card_def(id)
 	if cdef.has("flags") and cdef["flags"] is Dictionary:
 		max_servers = cdef["flags"].get("server-limit")
-	var at_remote_limit := max_servers != null and get_remotes(state).size() >= int(max_servers)
+	var at_remote_limit = max_servers != null and get_remotes(state).size() >= int(max_servers)
 	var hosts: Array = []
 	for c in all_installed(state, "corp"):
-		var hdef := NRCardDefs.card_def(c)
+		var hdef = NRCardDefs.card_def(c)
 		if hdef.has("can-host") and NRCard.rezzed(c) and NRUtil.is_fn(hdef["can-host"]):
 			if hdef["can-host"].call(state, "corp", NREid.make_eid(state), c, [card]):
 				hosts.append(c)
@@ -212,7 +212,7 @@ static func server_to_zone(state: NRState, server: Variant) -> Array:
 			var rid: int = int(state.getv("rid", 1))
 			return ["servers", "remote%d" % rid]
 		_:
-			var parts := str(server).split(" ")
+			var parts = str(server).split(" ")
 			return ["servers", "remote" + str(parts[parts.size() - 1])]
 
 
@@ -225,7 +225,7 @@ static func card_to_server(state: NRState, card: Dictionary) -> Variant:
 
 static func clear_empty_remotes(state: NRState) -> void:
 	for remote in get_remotes(state):
-		var zone := ["corp", "servers", remote]
+		var zone = ["corp", "servers", remote]
 		var content: Array = state.get_in(zone + ["content"], [])
 		var ices: Array = state.get_in(zone + ["ices"], [])
 		if content.is_empty() and ices.is_empty():

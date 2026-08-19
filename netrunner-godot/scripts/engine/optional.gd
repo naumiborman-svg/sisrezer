@@ -12,17 +12,17 @@ static func optional_ability(state: NRState, side: Variant, eid: Dictionary, car
 	var auto_ans = ""
 	if auto is Callable:
 		auto_ans = str(auto.call(state, side, eid, card, targets))
-	var yes_ok := true
+	var yes_ok = true
 	if not yes_ab.is_empty():
 		yes_ok = NRPayment.has_enough(state, side, eid, card, yes_ab.get("cost", []))
 		var yreq = yes_ab.get("req")
 		if yreq is Callable:
-			yes_ok = yes_ok and bool(yreq.call(state, side, eid, card, targets))
+			yes_ok = yes_ok and NRUtil.truthy(yreq.call(state, side, eid, card, targets))
 	var choices: Array = []
 	if yes_ok:
 		choices.append("Yes")
 	choices.append("No")
-	var finish := func(choice: Variant) -> void:
+	var finish = func(choice: Variant) -> void:
 		var val = choice.get("value") if choice is Dictionary else choice
 		var todo: Dictionary = yes_ab if str(val) == "Yes" and not yes_ab.is_empty() else no_ab
 		if ability.has("once") and not todo.is_empty():

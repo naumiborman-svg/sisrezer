@@ -11,7 +11,7 @@ static func expose(state: NRState, side: Variant, eid: Dictionary, target: Dicti
 	if NRCard.rezzed(target):
 		NREid.effect_completed(state, side, eid)
 		return
-	var c := target.duplicate(true)
+	var c = target.duplicate(true)
 	c["seen"] = true
 	NRUpdate.update_card(state, "corp", c)
 	NRSay.system_msg(state, side, "exposes %s" % NRToString.card_str(state, c))

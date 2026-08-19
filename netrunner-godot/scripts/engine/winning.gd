@@ -5,10 +5,10 @@ extends RefCounted
 static func win(state: NRState, side: Variant, reason: String) -> bool:
 	if state.getv("winner") != null:
 		return false
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	NRSay.system_msg(state, s, "wins the game")
 	NRSay.play_sfx(state, s, "game-end")
-	var now := NRUtil.make_timestamp()
+	var now = NRUtil.make_timestamp()
 	state.assoc_in(["stats", "time", "ended"], now)
 	state.setv("winner", s)
 	state.setv("loser", NRUtil.other_side(s))
@@ -27,7 +27,7 @@ static func tie(state: NRState, reason: String) -> bool:
 		return false
 	NRSay.system_say(state, null, "The game is a tie!")
 	NRSay.play_sfx(state, null, "game-end")
-	var now := NRUtil.make_timestamp()
+	var now = NRUtil.make_timestamp()
 	state.assoc_in(["stats", "time", "ended"], now)
 	state.setv("reason", reason)
 	state.setv("end-time", now)
@@ -71,8 +71,8 @@ static func side_win(state: NRState, side: Variant) -> bool:
 
 
 static func check_win_by_agenda(state: NRState, _side: Variant = null) -> bool:
-	var corp_win := side_win(state, "corp") and not NREffects.any_effects(state, "corp", "cannot-win-on-points")
-	var runner_win := side_win(state, "runner") and not NREffects.any_effects(state, "runner", "cannot-win-on-points")
+	var corp_win = side_win(state, "corp") and not NREffects.any_effects(state, "corp", "cannot-win-on-points")
+	var runner_win = side_win(state, "runner") and not NREffects.any_effects(state, "runner", "cannot-win-on-points")
 	if corp_win and runner_win:
 		return tie(state, "Tie")
 	if corp_win:

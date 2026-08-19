@@ -17,7 +17,7 @@ static func charge_ability(extra: Dictionary = {}) -> Dictionary:
 
 
 static func can_charge(_state: NRState, _side: Variant, card: Dictionary) -> bool:
-	return NRCard.installed(card) and not bool(card.get("facedown", false))
+	return NRCard.installed(card) and not NRUtil.truthy(card.get("facedown", false))
 
 
 static func charge_card(state: NRState, side: Variant, eid: Dictionary, card: Dictionary) -> void:

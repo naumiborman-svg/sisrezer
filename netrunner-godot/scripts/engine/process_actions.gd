@@ -62,14 +62,14 @@ static func _ensure_commands() -> void:
 static func set_property(state: NRState, side: Variant, args: Dictionary) -> void:
 	var key = args.get("key")
 	var value = args.get("value")
-	var acceptable := ["trash-like-cards", "auto-purge", "force-phase-12-self", "force-phase-12-opponent", "force-post-discard-self", "force-post-discard-opponent"]
+	var acceptable = ["trash-like-cards", "auto-purge", "force-phase-12-self", "force-phase-12-opponent", "force-post-discard-self", "force-post-discard-opponent"]
 	if str(key) in acceptable:
 		state.assoc_in([NRUtil.to_side(side), "properties", key], value)
 
 
 static func process_action(command: String, state: NRState, side: Variant, args: Dictionary = {}) -> bool:
 	_ensure_commands()
-	var cmd := NRUtil.to_kw(command)
+	var cmd = NRUtil.to_kw(command)
 	if not COMMANDS.has(cmd):
 		return false
 	COMMANDS[cmd].call(state, NRUtil.to_side(side), args)
@@ -79,7 +79,7 @@ static func process_action(command: String, state: NRState, side: Variant, args:
 
 static func checkpoint_cleanup(state: NRState) -> void:
 	NREngine.fake_checkpoint(state)
-	if NRRuns.check_for_empty_server(state) or bool(state.get_in(["end-run", "ended"])):
+	if NRRuns.check_for_empty_server(state) or NRUtil.truthy(state.get_in(["end-run", "ended"])):
 		NRRuns.handle_end_run(state, "corp", NREid.make_eid(state))
 		NREngine.fake_checkpoint(state)
 

@@ -10,7 +10,7 @@ static func getv(m: Variant, key: Variant, default_value: Variant = null) -> Var
 	if m is Dictionary:
 		if m.has(key):
 			return m[key]
-		var ks := str(key)
+		var ks = str(key)
 		if m.has(ks):
 			return m[ks]
 		if ks.begins_with(":"):
@@ -19,7 +19,7 @@ static func getv(m: Variant, key: Variant, default_value: Variant = null) -> Var
 				return m[ks]
 		return default_value
 	if m is Array:
-		var i := int(key) if key is int or key is float else -1
+		var i = int(key) if key is int or key is float else -1
 		if i >= 0 and i < m.size():
 			return m[i]
 		return default_value
@@ -123,14 +123,14 @@ static func truthy(x: Variant) -> bool:
 
 
 static func ice_strength_bonus(bonus: Variant, req_fn: Variant = null) -> Dictionary:
-	var ab := {
+	var ab = {
 		"type": "ice-strength",
 		"req": func(state, side, eid, card, targets):
 			var t = first_target(targets)
 			if not NRUtil.same_card(card, t):
 				return false
 			if req_fn is Callable:
-				return bool(req_fn.call(state, side, eid, card, targets))
+				return NRUtil.truthy(req_fn.call(state, side, eid, card, targets))
 			return true,
 		"value": bonus,
 	}
@@ -161,7 +161,7 @@ static func corp_rez_toast() -> Dictionary:
 static func filter_list(xs: Variant, pred: Callable) -> Array:
 	var out: Array = []
 	for x in as_array(xs):
-		if bool(pred.call(x)):
+		if NRUtil.truthy(pred.call(x)):
 			out.append(x)
 	return out
 
@@ -175,30 +175,30 @@ static func map_list(xs: Variant, fn: Callable) -> Array:
 
 static func some_list(xs: Variant, pred: Callable) -> Variant:
 	for x in as_array(xs):
-		if bool(pred.call(x)):
+		if NRUtil.truthy(pred.call(x)):
 			return x
 	return null
 
 
 static func every_list(xs: Variant, pred: Callable) -> bool:
-	var arr := as_array(xs)
+	var arr = as_array(xs)
 	if arr.is_empty():
 		return true
 	for x in arr:
-		if not bool(pred.call(x)):
+		if not NRUtil.truthy(pred.call(x)):
 			return false
 	return true
 
 
 static func take_n(xs: Variant, n: int) -> Array:
-	var arr := as_array(xs)
+	var arr = as_array(xs)
 	if n < 0:
 		n = 0
 	return arr.slice(0, mini(n, arr.size()))
 
 
 static func drop_n(xs: Variant, n: int) -> Array:
-	var arr := as_array(xs)
+	var arr = as_array(xs)
 	if n <= 0:
 		return arr
 	if n >= arr.size():
@@ -233,12 +233,12 @@ static func kw(v: Variant) -> String:
 
 
 static func side_kw(v: Variant) -> String:
-	var s := NRUtil.to_side(v)
+	var s = NRUtil.to_side(v)
 	return s if s != "" else kw(v)
 
 
 static func decapitalize(s: Variant) -> String:
-	var t := str(s)
+	var t = str(s)
 	if t == "":
 		return t
 	return t.substr(0, 1).to_lower() + t.substr(1)
@@ -296,8 +296,8 @@ static func set_autoresolve(key: String, label: String) -> Dictionary:
 				NREid.effect_completed(state, side, eid)
 				return
 			var special: Dictionary = c.get("special", {}) if c.get("special") is Dictionary else {}
-			var cur := str(special.get(key, "unset"))
-			var nxt := "Yes" if cur != "Yes" else "No"
+			var cur = str(special.get(key, "unset"))
+			var nxt = "Yes" if cur != "Yes" else "No"
 			special[key] = nxt
 			c = c.duplicate(true)
 			c["special"] = special
@@ -327,7 +327,7 @@ static func choose_one_helper(args = null, xs = null) -> Dictionary:
 		args = {}
 	if not (xs is Array):
 		xs = []
-	var prompt := str(args.get("prompt", "Choose one"))
+	var prompt = str(args.get("prompt", "Choose one"))
 	var player = args.get("player")
 	var choices: Array = []
 	var map: Dictionary = {}
@@ -336,9 +336,9 @@ static func choose_one_helper(args = null, xs = null) -> Dictionary:
 			choices.append(x)
 			map[x] = {"async": true, "effect": func(s, sd, e, _c, _t): NREid.effect_completed(s, sd, e)}
 		elif x is Dictionary:
-			var lab := str(x.get("option", x.get("label", "Choice")))
+			var lab = str(x.get("option", x.get("label", "Choice")))
 			if x.get("cost") != null:
-				var cs := NRPayment.build_cost_string(x.get("cost"))
+				var cs = NRPayment.build_cost_string(x.get("cost"))
 				if cs != "":
 					lab = cs + ": " + lab
 			choices.append(lab)
@@ -357,7 +357,7 @@ static func choose_one_helper(args = null, xs = null) -> Dictionary:
 		"choices": choices,
 		"effect": func(state, side, eid, card, targets):
 			var picked = first_target(targets)
-			var lab := str(picked.get("value") if picked is Dictionary else picked)
+			var lab = str(picked.get("value") if picked is Dictionary else picked)
 			var ab = map.get(lab, {})
 			if ab is Dictionary and not ab.is_empty():
 				NREngine.resolve_ability(state, side, eid, ab, card, targets)

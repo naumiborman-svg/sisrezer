@@ -4,7 +4,7 @@ extends RefCounted
 ## Registers all translated Corporation card files (ICE, assets, operations, agendas, upgrades).
 
 
-static var _registered := false
+static var _registered = false
 
 
 static func register() -> void:

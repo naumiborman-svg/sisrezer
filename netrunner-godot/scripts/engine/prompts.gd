@@ -6,7 +6,7 @@ static func choice_parser(choices: Variant) -> Variant:
 	if choices is Dictionary or choices is String:
 		return choices
 	var out: Array = []
-	var idx := 0
+	var idx = 0
 	for choice in NRUtil.as_array(choices):
 		if choice == null:
 			continue
@@ -16,10 +16,10 @@ static func choice_parser(choices: Variant) -> Variant:
 
 
 static func show_prompt(state: NRState, side: Variant, eid: Dictionary, card: Variant, message: Variant, choices: Variant, f: Callable, args: Dictionary = {}) -> void:
-	var s := NRUtil.to_side(side)
-	var prompt := str(message) if not (message is Callable) else str(message.call(state, s, eid, card, args.get("targets")))
+	var s = NRUtil.to_side(side)
+	var prompt = str(message) if not (message is Callable) else str(message.call(state, s, eid, card, args.get("targets")))
 	var parsed = choice_parser(choices)
-	var item := {
+	var item = {
 		"eid": eid,
 		"msg": prompt,
 		"choices": parsed,
@@ -30,7 +30,7 @@ static func show_prompt(state: NRState, side: Variant, eid: Dictionary, card: Va
 		"end-effect": args.get("end-effect"),
 		"show-discard": args.get("show-discard"),
 	}
-	if bool(args.get("waiting-prompt", false)):
+	if NRUtil.truthy(args.get("waiting-prompt", false)):
 		NRPromptState.add_to_prompt_queue(state, NRUtil.other_side(s), {
 			"eid": {"eid": eid.get("eid")},
 			"card": card,
@@ -41,8 +41,8 @@ static func show_prompt(state: NRState, side: Variant, eid: Dictionary, card: Va
 
 
 static func show_prompt_with_dice(state: NRState, side: Variant, card: Variant, message: String, other_choices: Array, f: Callable, args: Dictionary = {}) -> void:
-	var dice_msg := "Roll a d6"
-	var choices := other_choices.duplicate()
+	var dice_msg = "Roll a d6"
+	var choices = other_choices.duplicate()
 	choices.append(dice_msg)
 	show_prompt(state, side, NREid.make_eid(state), card, message, choices, func(choice):
 		var val = choice.get("value") if choice is Dictionary else choice
@@ -54,8 +54,8 @@ static func show_prompt_with_dice(state: NRState, side: Variant, card: Variant, 
 
 
 static func show_trace_prompt(state: NRState, side: Variant, eid: Dictionary, card: Variant, message: String, f: Callable, args: Dictionary) -> void:
-	var s := NRUtil.to_side(side)
-	var item := {
+	var s = NRUtil.to_side(side)
+	var item = {
 		"eid": eid,
 		"msg": message,
 		"choices": args.get("corp-credits") if s == "corp" else args.get("runner-credits"),
@@ -81,14 +81,14 @@ static func first_prompt_by_eid(state: NRState, side: Variant, eid: Dictionary, 
 
 
 static func resolve_select(state: NRState, side: Variant, eid: Dictionary, card: Variant, args: Dictionary) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var selected_arr: Array = state.get_in([s, "selected"], [])
 	var selected = selected_arr[0] if not selected_arr.is_empty() else {}
 	var cards: Array = []
 	if selected is Dictionary:
 		for c in selected.get("cards", []):
 			if c is Dictionary:
-				var cc := c.duplicate(true)
+				var cc = c.duplicate(true)
 				cc.erase("selected")
 				cards.append(cc)
 	var prompt = first_prompt_by_eid(state, s, eid, "select")
@@ -104,7 +104,7 @@ static func resolve_select(state: NRState, side: Variant, eid: Dictionary, card:
 
 
 static func show_select(state: NRState, side: Variant, card: Variant, ability: Dictionary, args: Dictionary = {}) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var choices: Dictionary = ability.get("choices", {})
 	show_prompt(state, s, ability.get("eid", NREid.make_eid(state)), card, ability.get("prompt", "Choose a card"), {"select": true, "max": choices.get("max", 1), "all": choices.get("all"), "req": choices.get("req"), "card": choices.get("card")}, func(choice):
 		NREngine.resolve_ability(state, s, NRUtil.dissoc(ability, ["choices"]), card, [choice])
@@ -123,7 +123,7 @@ static func show_wait_prompt(state: NRState, side: Variant, msg: String, _args: 
 
 
 static func clear_wait_prompt(state: NRState, side: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var prompts: Array = state.get_in([s, "prompt"], [])
 	var out: Array = []
 	for p in prompts:
@@ -157,6 +157,6 @@ static func clear_run_prompts(state: NRState) -> void:
 
 
 static func cancellable(choices: Array) -> Array:
-	var c := choices.duplicate()
+	var c = choices.duplicate()
 	c.append("Cancel")
 	return c

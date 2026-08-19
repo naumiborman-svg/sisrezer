@@ -1,0 +1,4 @@
+.godot/editor/
+.godot/imported/
+.godot/*.tmp
+.godot/uid_cache.bin

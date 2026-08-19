@@ -3,21 +3,21 @@ extends RefCounted
 ## Card string descriptions. Port of game.core.to_string.
 
 static func card_str(state: NRState, card: Dictionary, args: Dictionary = {}) -> String:
-	var visible := bool(args.get("visible", false))
-	var maybe_visible := bool(args.get("maybe-visible", false))
+	var visible = NRUtil.truthy(args.get("visible", false))
+	var maybe_visible = NRUtil.truthy(args.get("maybe-visible", false))
 	var host = card.get("host")
-	var text := ""
+	var text = ""
 	if NRCard.corp(card):
-		var installed_ice := NRCard.ice(card) and NRCard.installed(card)
-		if NRCard.rezzed(card) or bool(card.get("seen", false)) or visible:
+		var installed_ice = NRCard.ice(card) and NRCard.installed(card)
+		if NRCard.rezzed(card) or NRUtil.truthy(card.get("seen", false)) or visible:
 			text = NRCard.get_title(card)
 		elif maybe_visible:
 			text = "facedown %s" % NRCard.get_title(card)
 		else:
 			text = "ice" if installed_ice else "a card"
 		if host == null:
-			var z := NRCard.get_zone(card)
-			var loc := ""
+			var z = NRCard.get_zone(card)
+			var loc = ""
 			if installed_ice:
 				loc = " protecting "
 			elif NRServers.is_root(z):
@@ -31,7 +31,7 @@ static func card_str(state: NRState, card: Dictionary, args: Dictionary = {}) ->
 				if idx != null:
 					text += " at position %s" % str(idx)
 	else:
-		if bool(card.get("facedown", false)) or visible:
+		if NRUtil.truthy(card.get("facedown", false)) or visible:
 			text = "a facedown card"
 		else:
 			text = NRCard.get_title(card)

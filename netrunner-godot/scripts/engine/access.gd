@@ -15,7 +15,7 @@ static func max_access(state: NRState, n: int) -> void:
 
 
 static func num_cards_to_access(state: NRState, server: Variant, args: Dictionary = {}) -> int:
-	var base := 1
+	var base = 1
 	if NRServers.unknown_to_kw(server) == "rd":
 		base = 1 + access_bonus_count(state, "rd")
 	elif NRServers.unknown_to_kw(server) == "hq":
@@ -42,7 +42,7 @@ static func steal(state: NRState, side: Variant, eid: Dictionary, card: Dictiona
 		NRInitializing.card_init(state, "runner", moved, {"resolve-effect": true, "init-data": true})
 	NREngine.queue_event(state, "agenda-stolen", {"card": moved})
 	NRWinning.check_win_by_agenda(state)
-	if bool(args.get("suppress-checkpoint", false)):
+	if NRUtil.truthy(args.get("suppress-checkpoint", false)):
 		NREid.complete_with_result(state, side, eid, moved)
 	else:
 		NREngine.checkpoint(state, eid)
@@ -73,8 +73,7 @@ static func access_card(state: NRState, side: Variant, eid: Dictionary, card: Di
 						NRMoving.trash(st, sd, e, c, {})
 					)
 				else:
-					NREid.effect_completed(st, sd, e)
-			,
+					NREid.effect_completed(st, sd, e),
 		}, c, null)
 	else:
 		NREid.effect_completed(state, side, eid)
@@ -82,7 +81,7 @@ static func access_card(state: NRState, side: Variant, eid: Dictionary, card: Di
 
 
 static func breach_server(state: NRState, side: Variant, eid: Dictionary, server: Variant, args: Dictionary = {}) -> void:
-	var kw := NRServers.unknown_to_kw(NRUtil.first_of(server) if server is Array else server)
+	var kw = NRServers.unknown_to_kw(NRUtil.first_of(server) if server is Array else server)
 	NRSay.system_msg(state, "runner", "breaches %s" % NRServers.zone_to_name(kw))
 	NREngine.queue_event(state, "breach-server", {"server": kw})
 	var cards: Array = []

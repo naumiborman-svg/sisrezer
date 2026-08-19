@@ -7,7 +7,7 @@ static func to_c(typ: Variant, n: int = 1, args: Dictionary = {}) -> Dictionary:
 	return {
 		"cost/type": NRUtil.to_kw(typ),
 		"cost/amount": n,
-		"cost/additional": bool(args.get("additional", false)),
+		"cost/additional": NRUtil.truthy(args.get("additional", false)),
 		"cost/stealth": args.get("stealth"),
 		"cost/maximum": args.get("maximum"),
 		"cost/offset": args.get("offset"),
@@ -16,16 +16,16 @@ static func to_c(typ: Variant, n: int = 1, args: Dictionary = {}) -> Dictionary:
 
 
 static func _cost_args(args: Dictionary) -> Variant:
-	var out := args.duplicate()
+	var out = args.duplicate()
 	for k in ["stealth", "additional", "maximum", "offset"]:
 		out.erase(k)
 	return out if not out.is_empty() else null
 
 
 static func group_costs(costs: Array) -> Array:
-	var groups := {}
+	var groups = {}
 	var order: Array = []
-	var x_idx := 0
+	var x_idx = 0
 	for c in costs:
 		if not (c is Dictionary):
 			continue
@@ -100,7 +100,7 @@ static func merge_costs(costs: Variant, remove_zero_credit: bool = false) -> Arr
 	var real: Array = []
 	var additional: Array = []
 	for c in flat:
-		if c is Dictionary and bool(c.get("cost/additional", false)):
+		if c is Dictionary and NRUtil.truthy(c.get("cost/additional", false)):
 			additional.append(c)
 		elif c is Dictionary:
 			real.append(c)
@@ -118,7 +118,7 @@ static func merge_costs(costs: Variant, remove_zero_credit: bool = false) -> Arr
 
 
 static func any_effect_stops_pay(state: NRState, side: Variant, cost: Dictionary) -> bool:
-	var kw := "cannot-pay-%s" % str(cost.get("cost/type"))
+	var kw = "cannot-pay-%s" % str(cost.get("cost/type"))
 	return NREffects.any_effects(state, side, kw, func(v): return v == true, null, [{"amount": cost.get("cost/amount")}])
 
 
@@ -129,8 +129,8 @@ static func can_pay(state: NRState, side: Variant, eid: Dictionary, card: Varian
 	else:
 		costs_in = NRUtil.flatten([title, args])
 		title = null
-	var remove_zero := NRUtil.kw_eq(eid.get("source-type"), "corp-install") and card is Dictionary and not NRCard.ice(card)
-	var costs := merge_costs(NRUtil.filter_some(costs_in), remove_zero)
+	var remove_zero = NRUtil.kw_eq(eid.get("source-type"), "corp-install") and card is Dictionary and not NRCard.ice(card)
+	var costs = merge_costs(NRUtil.filter_some(costs_in), remove_zero)
 	for c in costs:
 		if any_effect_stops_pay(state, side, c):
 			if title:
@@ -165,12 +165,12 @@ static func x_cost_value(eid: Dictionary) -> int:
 
 
 static func build_cost_label(costs: Variant) -> String:
-	var merged := merge_costs(costs)
+	var merged = merge_costs(costs)
 	merged.sort_custom(func(a, b): return display_cost_ranks(a) < display_cost_ranks(b))
 	var labels: Array = []
 	for c in merged:
 		labels.append(NRCosts.label(c))
-	var s := ", ".join(labels)
+	var s = ", ".join(labels)
 	if s == "":
 		return ""
 	return s.substr(0, 1).to_upper() + s.substr(1)
@@ -180,7 +180,7 @@ static func add_cost_label_to_ability(ability: Dictionary, cost: Variant = null)
 	var c = cost if cost != null else ability.get("cost")
 	if ability.has("fake-cost"):
 		c = merge_costs([c, ability["fake-cost"]])
-	var ab := ability.duplicate(true)
+	var ab = ability.duplicate(true)
 	ab["cost-label"] = build_cost_label(c)
 	return ab
 
@@ -188,8 +188,8 @@ static func add_cost_label_to_ability(ability: Dictionary, cost: Variant = null)
 static func cost_to_string(cost: Dictionary) -> String:
 	if int(NRCosts.value(cost)) < 0:
 		return ""
-	var t := str(cost.get("cost/type"))
-	var lab := NRCosts.label(cost)
+	var t = str(cost.get("cost/type"))
+	var lab = NRCosts.label(cost)
 	if t in ["click", "lose-click"]:
 		return "spend " + lab
 	if t == "credit":
@@ -200,10 +200,10 @@ static func cost_to_string(cost: Dictionary) -> String:
 static func build_cost_string(costs: Variant) -> String:
 	var parts: Array = []
 	for c in merge_costs(costs):
-		var s := cost_to_string(c)
+		var s = cost_to_string(c)
 		if s != "":
 			parts.append(s)
-	var joined := " and ".join(parts)
+	var joined = " and ".join(parts)
 	if joined == "":
 		return ""
 	return joined.substr(0, 1).to_upper() + joined.substr(1)

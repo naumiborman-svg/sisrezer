@@ -20,7 +20,7 @@ static func make_system_message(text: String) -> Dictionary:
 
 
 static func select_pronoun(user: Dictionary) -> String:
-	var key := str(NRUtil.get_in(user, ["options", "pronouns"], "their"))
+	var key = str(NRUtil.get_in(user, ["options", "pronouns"], "their"))
 	match key:
 		"he":
 			return "his"
@@ -33,49 +33,52 @@ static func select_pronoun(user: Dictionary) -> String:
 
 
 static func insert_pronouns(state: NRState, side: Variant, text: String) -> String:
-	var corp_p := select_pronoun(state.get_in(["corp", "user"], {}))
-	var runner_p := select_pronoun(state.get_in(["runner", "user"], {}))
-	var user_p := corp_p if NRUtil.to_side(side) == "corp" else (runner_p if NRUtil.to_side(side) == "runner" else "their")
-	var t := text.replace("[pronoun]", user_p).replace("[their]", user_p)
+	var corp_p = select_pronoun(state.get_in(["corp", "user"], {}))
+	var runner_p = select_pronoun(state.get_in(["runner", "user"], {}))
+	var user_p = corp_p if NRUtil.to_side(side) == "corp" else (runner_p if NRUtil.to_side(side) == "runner" else "their")
+	var t = text.replace("[pronoun]", user_p).replace("[their]", user_p)
 	t = t.replace("[corp-pronoun]", corp_p).replace("[runner-pronoun]", runner_p)
 	return t
 
 
-static func log(state: NRState, message: Dictionary) -> void:
-	var lg: Array = state.getv("log", [])
-	if lg is Dictionary:
-		# new-state uses a map of sides; convert to array of maps
+static func append_log(state: NRState, message: Dictionary) -> void:
+	var lg: Variant = state.getv("log", [])
+	if not (lg is Array):
 		lg = []
 	lg.append(message)
 	state.setv("log", lg)
 
 
+static func log(state: NRState, message: Dictionary) -> void:
+	append_log(state, message)
+
+
 static func say(state: NRState, side: Variant, args: Dictionary, log_side: Variant = "public") -> void:
 	var author = args.get("user", state.get_in([NRUtil.to_side(side), "user"]))
-	var message := make_message(author, insert_pronouns(state, side, str(args.get("text", ""))))
-	var packed := {}
+	var message = make_message(author, insert_pronouns(state, side, str(args.get("text", ""))))
+	var packed = {}
 	for s in NRUtil.as_array(log_side):
 		packed[NRUtil.to_kw(s)] = message
-	log(state, packed)
+	append_log(state, packed)
 
 
 static func system_say(state: NRState, side: Variant, text: String, args: Dictionary = {}) -> void:
-	var hr := bool(args.get("hr", false))
+	var hr = NRUtil.truthy(args.get("hr", false))
 	var log_side = args.get("log-side", "public")
 	say(state, side, make_system_message(text + ("[hr]" if hr else "")), log_side)
 
 
 static func system_msg(state: NRState, side: Variant, text: String, args: Dictionary = {}) -> void:
-	var username := str(state.get_in([NRUtil.to_side(side), "user", "username"], NRUtil.side_str(side)))
+	var username = str(state.get_in([NRUtil.to_side(side), "user", "username"], NRUtil.side_str(side)))
 	system_say(state, side, "%s %s." % [username, text], args)
 
 
 static func multi_msg(state: NRState, side: Variant, message_map: Dictionary) -> void:
-	var username := str(state.get_in([NRUtil.to_side(side), "user", "username"], NRUtil.side_str(side)))
-	var packed := {}
+	var username = str(state.get_in([NRUtil.to_side(side), "user", "username"], NRUtil.side_str(side)))
+	var packed = {}
 	for k in message_map:
 		packed[k] = make_system_message("%s %s." % [username, str(message_map[k])])
-	log(state, packed)
+	append_log(state, packed)
 
 
 static func enforce_msg(state: NRState, card: Dictionary, text: String) -> void:

@@ -6,7 +6,7 @@ static func psi_game(state: NRState, side: Variant, eid: Dictionary, card: Dicti
 	state.setv("psi", {})
 	NREngine.register_once(state, side, psi, card)
 	for s in ["corp", "runner"]:
-		var max_amt := mini(2, NRCosts.total_available_credits(state, s, eid, card))
+		var max_amt = mini(2, NRCosts.total_available_credits(state, s, eid, card))
 		var choices: Array = []
 		for i in range(max_amt + 1):
 			choices.append("%d [Credits]" % i)
@@ -22,7 +22,7 @@ static func _parse_bet(choice: Variant) -> int:
 
 static func _resolve_psi(state: NRState, side: Variant, eid: Dictionary, card: Dictionary, psi: Dictionary, bet: int, targets: Variant) -> void:
 	state.assoc_in(["psi", NRUtil.to_side(side)], bet)
-	var opponent := NRUtil.other_side(side)
+	var opponent = NRUtil.other_side(side)
 	var opp_bet = state.get_in(["psi", opponent])
 	if opp_bet == null:
 		NRPrompts.show_wait_prompt(state, side, "%s to choose psi game credits" % NRUtil.side_str(opponent))
@@ -34,7 +34,7 @@ static func _resolve_psi(state: NRState, side: Variant, eid: Dictionary, card: D
 			NREngine.pay(state, side, pe2, card, [NRPayment.to_c("credit", bet)])
 		, func(_p2):
 			NRPrompts.clear_wait_prompt(state, opponent)
-			var equal := int(opp_bet) == bet
+			var equal = int(opp_bet) == bet
 			var ability = psi.get("equal") if equal else psi.get("not-equal")
 			if ability is Dictionary:
 				NREngine.continue_ability(state, NRUtil.to_side(card.get("side")), NRUtil.merge(ability, {"async": true}), card, targets)

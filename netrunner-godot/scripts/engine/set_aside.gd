@@ -3,15 +3,15 @@ extends RefCounted
 ## Set-aside zone. Port of game.core.set_aside.
 
 static func set_aside(state: NRState, side: Variant, eid: Dictionary, cards: Array, args: Dictionary = {}) -> Array:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var moved: Array = []
 	for c in cards:
 		if c is Dictionary:
-			var vis := {
-				"corp-can-see": bool(args.get("corp-can-see", s == "corp")),
-				"runner-can-see": bool(args.get("runner-can-see", s == "runner")),
+			var vis = {
+				"corp-can-see": NRUtil.truthy(args.get("corp-can-see", s == "corp")),
+				"runner-can-see": NRUtil.truthy(args.get("runner-can-see", s == "runner")),
 			}
-			var mc := c.duplicate(true)
+			var mc = c.duplicate(true)
 			mc["set-aside-visibility"] = vis
 			mc["set-aside-eid"] = eid.get("eid")
 			var result = NRMoving.move(state, s, mc, "set-aside")
@@ -26,12 +26,12 @@ static func set_aside(state: NRState, side: Variant, eid: Dictionary, cards: Arr
 
 
 static func set_aside_for_me(state: NRState, side: Variant, eid: Dictionary, cards: Array) -> Array:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	return set_aside(state, s, eid, cards, {"corp-can-see": s == "corp", "runner-can-see": s == "runner"})
 
 
 static func get_set_aside(state: NRState, side: Variant, eid: Dictionary) -> Array:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var ids: Array = state.get_in([s, "set-aside-tracking", eid.get("eid")], [])
 	var out: Array = []
 	for c in state.get_in([s, "set-aside"], []):
@@ -41,7 +41,7 @@ static func get_set_aside(state: NRState, side: Variant, eid: Dictionary) -> Arr
 
 
 static func clean_set_aside(state: NRState, side: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	for c in state.get_in([s, "set-aside"], []).duplicate():
 		if c is Dictionary:
 			NRMoving.move(state, s, c, "discard")

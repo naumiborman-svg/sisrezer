@@ -11,7 +11,7 @@ static func turn_events(state: NRState, _side: Variant, ev: String) -> Array:
 
 
 static func last_turn(state: NRState, side: Variant, event: String) -> bool:
-	return bool(state.get_in([NRUtil.to_side(side), "register-last-turn", event], false))
+	return NRUtil.truthy(state.get_in([NRUtil.to_side(side), "register-last-turn", event], false))
 
 
 static func not_last_turn(state: NRState, side: Variant, event: String) -> bool:
@@ -24,7 +24,7 @@ static func not_last_turn(state: NRState, side: Variant, event: String) -> bool:
 
 
 static func no_event(state: NRState, side: Variant, ev: String, pred: Callable = Callable()) -> bool:
-	var p := pred if pred.is_valid() else func(_t): return true
+	var p = pred if pred.is_valid() else func(_t): return true
 	for t in turn_events(state, side, ev):
 		if p.call(t):
 			return false
@@ -32,8 +32,8 @@ static func no_event(state: NRState, side: Variant, ev: String, pred: Callable =
 
 
 static func event_count(state: NRState, side: Variant, ev: String, pred: Callable = Callable()) -> int:
-	var p := pred if pred.is_valid() else func(_t): return true
-	var n := 0
+	var p = pred if pred.is_valid() else func(_t): return true
+	var n = 0
 	for t in turn_events(state, side, ev):
 		if p.call(t):
 			n += 1
@@ -60,7 +60,7 @@ static func first_trash(state: NRState, pred: Callable = Callable()) -> bool:
 
 
 static func get_turn_damage(state: NRState, _side: Variant = null) -> int:
-	var n := 0
+	var n = 0
 	for t in turn_events(state, "runner", "damage"):
 		var ctx = NRUtil.first_of(t)
 		if ctx is Dictionary:
@@ -69,7 +69,7 @@ static func get_turn_damage(state: NRState, _side: Variant = null) -> int:
 
 
 static func get_installed_trashed(state: NRState, side: Variant) -> Array:
-	var ev := "corp-trash" if NRUtil.to_side(side) == "corp" else "runner-trash"
+	var ev = "corp-trash" if NRUtil.to_side(side) == "corp" else "runner-trash"
 	var out: Array = []
 	for targets in turn_events(state, side, ev):
 		for t in NRUtil.as_array(targets):
@@ -83,7 +83,7 @@ static func first_installed_trash(state: NRState, side: Variant) -> bool:
 
 
 static func first_installed_trash_own(state: NRState, side: Variant) -> bool:
-	var n := 0
+	var n = 0
 	for t in get_installed_trashed(state, side):
 		if NRUtil.same_side(NRUtil.get_in(t, ["card", "side"]), side):
 			n += 1
@@ -102,7 +102,7 @@ static func run_events(state: NRState, _side: Variant, ev: String) -> Array:
 
 
 static func no_run_event(state: NRState, side: Variant, ev: String, pred: Callable = Callable()) -> bool:
-	var p := pred if pred.is_valid() else func(_t): return true
+	var p = pred if pred.is_valid() else func(_t): return true
 	for t in run_events(state, side, ev):
 		if p.call(t):
 			return false
@@ -110,8 +110,8 @@ static func no_run_event(state: NRState, side: Variant, ev: String, pred: Callab
 
 
 static func run_event_count(state: NRState, side: Variant, ev: String, pred: Callable = Callable()) -> int:
-	var p := pred if pred.is_valid() else func(_t): return true
-	var n := 0
+	var p = pred if pred.is_valid() else func(_t): return true
+	var n = 0
 	for t in run_events(state, side, ev):
 		if p.call(t):
 			n += 1

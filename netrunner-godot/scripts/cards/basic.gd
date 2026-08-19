@@ -4,7 +4,7 @@ extends RefCounted
 ## Port of game.cards.basic — Corp and Runner basic action cards.
 ## Call register() before NRSetUp.init_game (init_game also calls it).
 
-static var _registered := false
+static var _registered = false
 
 
 static func register() -> void:
@@ -28,7 +28,7 @@ static func _ctx(targets: Variant) -> Dictionary:
 
 
 static func _target_card(state: NRState, targets: Variant) -> Variant:
-	var ctx := NRCardsBasic._ctx(targets)
+	var ctx = NRCardsBasic._ctx(targets)
 	var c = ctx.get("card")
 	if c is Dictionary:
 		var latest = NRCard.get_card(state, c)
@@ -78,7 +78,7 @@ static func _register_corp() -> void:
 						return false
 					if not (NRCard.agenda(target_card) or NRCard.asset(target_card) or NRCard.ice(target_card) or NRCard.upgrade(target_card)):
 						return false
-					var args := {"base-cost": [NRPayment.to_c("click", 1)], "ignore-ice-cost": true, "action": "corp-click-install", "no-toast": true}
+					var args = {"base-cost": [NRPayment.to_c("click", 1)], "ignore-ice-cost": true, "action": "corp-click-install", "no-toast": true}
 					var server = NRCardsBasic._ctx(targets).get("server")
 					if server != null:
 						return NRInstalling.corp_can_pay_and_install(state, side, eid, target_card, server, args)
@@ -136,7 +136,7 @@ static func _register_corp() -> void:
 					if not (t is Dictionary) or not NRCard.resource(t):
 						return false
 					if NRFlags.untrashable_while_resources(t):
-						var n := 0
+						var n = 0
 						for c in NRBoard.all_active_installed(state, "runner"):
 							if c is Dictionary and NRCard.resource(c):
 								n += 1

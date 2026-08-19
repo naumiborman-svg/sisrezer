@@ -17,7 +17,7 @@ static func select_ability_kw(ability: Dictionary) -> Variant:
 
 
 static func dissoc_req(ability: Dictionary) -> Dictionary:
-	var ab := ability.duplicate(true)
+	var ab = ability.duplicate(true)
 	var kw = select_ability_kw(ab)
 	if kw != null and ab[kw] is Dictionary:
 		ab[kw].erase("req")
@@ -34,7 +34,7 @@ static func should_trigger(state: NRState, side: Variant, eid: Dictionary, card:
 		return should_trigger(state, side, eid, card, targets, ability[kw])
 	var req = ability.get("req")
 	if req is Callable:
-		return bool(req.call(state, side, eid, card, targets))
+		return NRUtil.truthy(req.call(state, side, eid, card, targets))
 	return true
 
 
@@ -43,7 +43,7 @@ static func not_used_once(state: NRState, ability: Dictionary, card: Dictionary)
 	if once == null:
 		return true
 	var key = ability.get("once-key", card.get("cid"))
-	return not bool(state.get_in([NRUtil.to_kw(once), key], false))
+	return not NRUtil.truthy(state.get_in([NRUtil.to_kw(once), key], false))
 
 
 static func can_trigger(state: NRState, side: Variant, eid: Dictionary, ability: Dictionary, card: Variant, targets: Variant) -> bool:
@@ -149,9 +149,9 @@ static func print_msg(state: NRState, side: Variant, ability: Dictionary, card: 
 		desc = str(message.call(state, side, ability.get("eid"), card, targets))
 	else:
 		return
-	var cost_spend := NRPayment.build_spend_msg(payment_str, "use")
-	var title := NRCard.get_title(card) if card is Dictionary else "a card"
-	var display := ability.get("display-side", NRUtil.to_side(card.get("side") if card is Dictionary else side))
+	var cost_spend = NRPayment.build_spend_msg(payment_str, "use")
+	var title = NRCard.get_title(card) if card is Dictionary else "a card"
+	var display = ability.get("display-side", NRUtil.to_side(card.get("side") if card is Dictionary else side))
 	if NRUtil.kw_eq(message, "cost"):
 		NRSay.system_msg(state, display, "%s to satisfy %s" % [payment_str, title])
 	elif desc != "":
@@ -167,9 +167,9 @@ static func register_once(state: NRState, _side: Variant, ability: Dictionary, c
 
 static func _do_effect(state: NRState, side: Variant, ability: Dictionary, card: Variant, payment_str: String, targets: Variant) -> void:
 	var cigs = ability.get("change-in-game-state")
-	var ok := true
+	var ok = true
 	if cigs is Dictionary and cigs.get("req") is Callable:
-		ok = bool(cigs["req"].call(state, side, ability.get("eid"), card, targets))
+		ok = NRUtil.truthy(cigs["req"].call(state, side, ability.get("eid"), card, targets))
 	if ok:
 		print_msg(state, side, ability, card, targets, payment_str)
 		var effect = ability.get("effect")
@@ -183,7 +183,7 @@ static func _do_effect(state: NRState, side: Variant, ability: Dictionary, card:
 
 
 static func merge_costs_paid(a: Dictionary, b: Dictionary = {}) -> Dictionary:
-	var acc := a.duplicate(true)
+	var acc = a.duplicate(true)
 	for k in b:
 		var cur: Dictionary = b[k] if b[k] is Dictionary else {"paid/type": k, "paid/value": b[k]}
 		var existing: Dictionary = acc.get(k, {})
@@ -198,11 +198,11 @@ static func merge_costs_paid(a: Dictionary, b: Dictionary = {}) -> Dictionary:
 
 static func _do_paid_ability(state: NRState, side: Variant, ability: Dictionary, card: Variant, targets: Variant, payment: Dictionary) -> void:
 	var eid: Dictionary = ability.get("eid", {})
-	var cost_paid := merge_costs_paid(eid.get("cost-paid", {}), payment.get("cost-paid", {}))
+	var cost_paid = merge_costs_paid(eid.get("cost-paid", {}), payment.get("cost-paid", {}))
 	ability = ability.duplicate(true)
 	ability["eid"] = eid.duplicate(true)
 	ability["eid"]["cost-paid"] = cost_paid
-	var msg := str(payment.get("msg", ""))
+	var msg = str(payment.get("msg", ""))
 	if msg != "":
 		ability["eid"]["latest-payment-str"] = msg
 	var latest = NRCard.get_card(state, card) if card is Dictionary else card
@@ -210,14 +210,14 @@ static func _do_paid_ability(state: NRState, side: Variant, ability: Dictionary,
 		card = latest
 	register_once(state, side, ability, card if card is Dictionary else {})
 	_do_effect(state, side, ability, card, msg, targets)
-	if not bool(ability.get("async", false)):
+	if not NRUtil.truthy(ability.get("async", false)):
 		NREid.effect_completed(state, side, ability["eid"])
 
 
 static func _do_ability(state: NRState, side: Variant, ability: Dictionary, card: Variant, targets: Variant) -> void:
 	var eid: Dictionary = ability.get("eid", {})
-	if bool(ability.get("waiting-prompt", false)):
-		var other := NRUtil.other_side(ability.get("player", side))
+	if NRUtil.truthy(ability.get("waiting-prompt", false)):
+		var other = NRUtil.other_side(ability.get("player", side))
 		NRPromptState.add_to_prompt_queue(state, other, {
 			"eid": {"eid": eid.get("eid")},
 			"card": card,
@@ -239,15 +239,15 @@ static func _do_ability(state: NRState, side: Variant, ability: Dictionary, card
 
 
 static func _do_choices(state: NRState, side: Variant, ability: Dictionary, card: Variant, targets: Variant) -> void:
-	var s := NRUtil.to_side(ability.get("player", side))
+	var s = NRUtil.to_side(ability.get("player", side))
 	var choices = ability.get("choices")
 	var prompt = ability.get("prompt", "Choose")
 	if prompt is Callable:
 		prompt = str(prompt.call(state, s, ability.get("eid"), card, targets))
-	var ab := ability.duplicate(true)
+	var ab = ability.duplicate(true)
 	ab.erase("choices")
 	ab.erase("waiting-prompt")
-	var args := {
+	var args = {
 		"async": ability.get("async"),
 		"cancel": ability.get("cancel"),
 		"prompt-type": ability.get("prompt-type"),
@@ -311,8 +311,8 @@ static func build_event_ability(ability: Dictionary, card: Dictionary) -> Dictio
 		"location": location,
 		"duration": ability.get("duration", "default-duration"),
 		"condition": ability.get("condition", "active"),
-		"unregister-once-resolved": bool(ability.get("unregister-once-resolved", false)),
-		"once-per-instance": bool(ability.get("once-per-instance", false)),
+		"unregister-once-resolved": NRUtil.truthy(ability.get("unregister-once-resolved", false)),
+		"once-per-instance": NRUtil.truthy(ability.get("once-per-instance", false)),
 		"ability": NRUtil.dissoc(ability, ["event", "duration", "condition"]),
 		"card": card,
 		"uuid": NRUtil.make_uuid(),
@@ -340,7 +340,7 @@ static func register_default_events(state: NRState, side: Variant, card: Diction
 
 
 static func register_pending_event(state: NRState, event: String, card: Dictionary, ability: Dictionary) -> void:
-	var handler := build_event_ability(NRUtil.merge(ability, {"event": event, "duration": "pending"}), card)
+	var handler = build_event_ability(NRUtil.merge(ability, {"event": event, "duration": "pending"}), card)
 	var cur: Array = state.getv("events", [])
 	cur.append(handler)
 	state.setv("events", cur)
@@ -369,7 +369,7 @@ static func update_floating_event_durations(state: NRState, _side: Variant, from
 	var out: Array = []
 	for e in state.getv("events", []):
 		if e is Dictionary and NRUtil.kw_eq(e.get("duration"), from_key):
-			var ne := e.duplicate(true)
+			var ne = e.duplicate(true)
 			ne["duration"] = to_key
 			out.append(ne)
 		else:
@@ -379,7 +379,7 @@ static func update_floating_event_durations(state: NRState, _side: Variant, from
 
 static func unregister_event_by_uuid(state: NRState, _side: Variant, uuid: String) -> void:
 	var out: Array = []
-	var removed := false
+	var removed = false
 	for e in state.getv("events", []):
 		if not removed and e is Dictionary and e.get("uuid") == uuid:
 			removed = true
@@ -424,7 +424,7 @@ static func trigger_suppress(state: NRState, side: Variant, event: String, conte
 		if s is Dictionary and NRUtil.kw_eq(s.get("event"), event):
 			var ab = s.get("ability", {})
 			var req = ab.get("req") if ab is Dictionary else null
-			if req is Callable and bool(req.call(state, side, NREid.make_eid(state), s.get("card"), [context])):
+			if req is Callable and NRUtil.truthy(req.call(state, side, NREid.make_eid(state), s.get("card"), [context])):
 				return true
 	return false
 
@@ -473,7 +473,7 @@ static func _trigger_event_sync_next(state: NRState, side: Variant, eid: Diction
 		NREid.effect_completed(state, side, eid)
 		return
 	var handler: Dictionary = handlers[0]
-	var rest := handlers.slice(1)
+	var rest = handlers.slice(1)
 	var card = handler.get("card")
 	var ability: Dictionary = handler.get("ability", {})
 	NREid.wait_for(state, eid, func(ne):
@@ -527,10 +527,10 @@ static func resolve_durations(state: NRState, side: Variant, durations: Array = 
 
 
 static func get_old_uniques(state: NRState, side: Variant) -> Array:
-	var groups := {}
+	var groups = {}
 	for c in NRBoard.all_active_installed(state, side):
 		if NRCard.unique(c):
-			var t := str(c.get("title"))
+			var t = str(c.get("title"))
 			if not groups.has(t):
 				groups[t] = []
 			groups[t].append(c)
@@ -566,7 +566,7 @@ static func check_restrictions(state: NRState, eid: Dictionary) -> void:
 
 
 static func checkpoint(state: NRState, eid: Dictionary, args: Dictionary = {}) -> void:
-	var marked := mark_pending_abilities(state, eid, args)
+	var marked = mark_pending_abilities(state, eid, args)
 	var durations: Array = NRUtil.as_array(args.get("durations", []))
 	if args.has("duration"):
 		durations.append(args["duration"])
@@ -576,7 +576,7 @@ static func checkpoint(state: NRState, eid: Dictionary, args: Dictionary = {}) -
 			NREffects.unregister_lingering_effects(state, null, str(d))
 			unregister_floating_events(state, null, str(d))
 	NREffects.update_disabled_cards(state)
-	if NRWinning.check_win_by_agenda(state) and not bool(state.getv("winner-declared", false)):
+	if NRWinning.check_win_by_agenda(state) and not NRUtil.truthy(state.getv("winner-declared", false)):
 		state.setv("winner-declared", true)
 		trigger_event(state, null, "win", {"winner": state.getv("winner")})
 	NREid.wait_for(state, eid, func(ne):
@@ -598,7 +598,7 @@ static func end_of_phase_checkpoint(state: NRState, eid: Dictionary, event: Stri
 
 static func fake_checkpoint(state: NRState) -> void:
 	for i in range(10):
-		var changed := [
+		var changed = [
 			NRIce.update_all_ice(state, "corp"),
 			NRIce.update_all_icebreakers(state, "runner"),
 			NRInitializing.update_all_card_labels(state),
@@ -611,7 +611,7 @@ static func fake_checkpoint(state: NRState) -> void:
 			NRSubtypes.update_all_subtypes(state),
 			NRTags.update_tag_status(state),
 		]
-		var any := false
+		var any = false
 		for c in changed:
 			if c:
 				any = true
@@ -623,7 +623,7 @@ static func fake_checkpoint(state: NRState) -> void:
 # --- Pay ---
 
 static func pay(state: NRState, side: Variant, eid: Dictionary, card: Variant, costs: Variant) -> void:
-	var merged := NRPayment.merge_costs(costs)
+	var merged = NRPayment.merge_costs(costs)
 	_pay_next(state, side, eid, card, merged, {}, "")
 
 
@@ -632,7 +632,7 @@ static func _pay_next(state: NRState, side: Variant, eid: Dictionary, card: Vari
 		NREid.complete_with_result(state, side, eid, {"msg": msg, "cost-paid": paid})
 		return
 	var cost: Dictionary = remaining[0]
-	var rest := remaining.slice(1)
+	var rest = remaining.slice(1)
 	if not NRCosts.payable(cost, state, side, eid, card):
 		NREid.complete_with_result(state, side, eid, {"msg": null, "cost-paid": null})
 		return
@@ -640,9 +640,9 @@ static func _pay_next(state: NRState, side: Variant, eid: Dictionary, card: Vari
 		NRCosts.handler(cost, state, side, ne, card)
 	, func(result):
 		var r: Dictionary = result if result is Dictionary else {"msg": NRPayment.cost_to_string(cost), "cost-paid": {}}
-		var new_paid := merge_costs_paid(paid, r.get("cost-paid", {}))
-		var new_msg := msg
-		var piece := str(r.get("msg", ""))
+		var new_paid = merge_costs_paid(paid, r.get("cost-paid", {}))
+		var new_msg = msg
+		var piece = str(r.get("msg", ""))
 		if piece != "":
 			new_msg = piece if new_msg == "" else (new_msg + " and " + piece)
 		_pay_next(state, side, eid, card, rest, new_paid, new_msg)

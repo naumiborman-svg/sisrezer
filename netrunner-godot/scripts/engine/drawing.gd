@@ -7,7 +7,7 @@ static func max_draw(state: NRState, side: Variant, n: int) -> void:
 
 
 static func remaining_draws(state: NRState, side: Variant) -> Variant:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var md = state.get_in([s, "register", "max-draw"])
 	if md == null:
 		return null
@@ -30,7 +30,7 @@ static func use_bonus_click_draws(state: NRState) -> int:
 
 
 static func first_time_draw_bonus(side: String, n: int) -> Dictionary:
-	var event := "pre-%s-draw" % side
+	var event = "pre-%s-draw" % side
 	return {
 		"event": event,
 		"msg": "draw 1 additional card",
@@ -40,13 +40,13 @@ static func first_time_draw_bonus(side: String, n: int) -> Dictionary:
 
 
 static func draw(state: NRState, side: Variant, eid: Dictionary, n: int, args: Dictionary = {}) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	if n == 0:
 		NREid.effect_completed(state, s, eid)
 		return
 	var bonus: int = int(state.get_in(["bonus", "draw"], 0))
 	n = n + bonus
-	var draws_wanted := n
+	var draws_wanted = n
 	var active: String = str(state.getv("active-player", s))
 	var remaining = remaining_draws(state, s)
 	if s == active and remaining != null:
@@ -57,22 +57,22 @@ static func draw(state: NRState, side: Variant, eid: Dictionary, n: int, args: D
 		NRWinning.win_decked(state)
 	if n < draws_wanted:
 		NRSay.system_msg(state, NRUtil.other_side(s), "prevents %s from being drawn" % NRUtil.quantify(draws_wanted - n, "card"))
-	if bool(state.get_in([s, "register", "cannot-draw"], false)) or n <= 0 or deck_count <= 0:
+	if NRUtil.truthy(state.get_in([s, "register", "cannot-draw"], false)) or n <= 0 or deck_count <= 0:
 		NREid.effect_completed(state, s, eid)
 		return
 	var deck: Array = state.get_in([s, "deck"], [])
-	var to_draw := NRUtil.take_n(deck, n)
-	var drawn := NRSetAside.set_aside_for_me(state, s, eid, to_draw)
-	var drawn_count := drawn.size()
+	var to_draw = NRUtil.take_n(deck, n)
+	var drawn = NRSetAside.set_aside_for_me(state, s, eid, to_draw)
+	var drawn_count = drawn.size()
 	state.update_in([s, "register", "drawn-this-turn"], NRUtil.inc_n(drawn_count), 0)
-	if not bool(args.get("no-update-draw-stats", false)):
+	if not NRUtil.truthy(args.get("no-update-draw-stats", false)):
 		state.update_in(["stats", s, "gain", "card"], NRUtil.inc_n(n), 0)
-	if bool(args.get("suppress-event", false)):
+	if NRUtil.truthy(args.get("suppress-event", false)):
 		for c in NRSetAside.get_set_aside(state, s, eid):
 			NRMoving.move(state, s, c, "hand")
 		NREid.effect_completed(state, s, eid)
 	else:
-		var draw_event := "corp-draw" if s == "corp" else "runner-draw"
+		var draw_event = "corp-draw" if s == "corp" else "runner-draw"
 		var currently: Array = state.get_in([s, "register", "currently-drawing"], [])
 		currently.append(drawn)
 		state.assoc_in([s, "register", "currently-drawing"], currently)
@@ -119,10 +119,9 @@ static func draw_up_to(state: NRState, side: Variant, eid: Dictionary, card: Dic
 		"waiting-prompt": true,
 		"async": true,
 		"effect": func(st, sd, e, _c, targets):
-			var amt := n
+			var amt = n
 			if targets is Array and not targets.is_empty():
 				var t = targets[0]
 				amt = int(t.get("value", t) if t is Dictionary else t)
-			draw(st, sd, e, amt, args)
-		,
+			draw(st, sd, e, amt, args),
 	}, card, null)

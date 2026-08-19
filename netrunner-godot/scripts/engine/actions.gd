@@ -11,9 +11,9 @@ static func play_ability(state: NRState, side: Variant, args: Dictionary) -> voi
 	if idx < 0 or idx >= abilities.size():
 		return
 	var ability: Dictionary = abilities[idx]
-	if bool(card.get("disabled", false)):
+	if NRUtil.truthy(card.get("disabled", false)):
 		return
-	if bool(ability.get("action", false)) and state.getv("run") is Dictionary:
+	if NRUtil.truthy(ability.get("action", false)) and state.getv("run") is Dictionary:
 		NRToasts.toast(state, side, "You cannot play actions during a run.")
 		return
 	var prompt_type = state.get_in([NRUtil.to_side(side), "prompt-state", "prompt-type"])
@@ -22,13 +22,13 @@ static func play_ability(state: NRState, side: Variant, args: Dictionary) -> voi
 		return
 	if NRUtil.to_side(side) != NRUtil.to_side(card.get("side")):
 		return
-	var eid := NREid.make_eid(state, {"source": card, "source-type": "ability", "source-info": {"ability-idx": idx, "ability-targets": args.get("targets")}})
+	var eid = NREid.make_eid(state, {"source": card, "source-type": "ability", "source-info": {"ability-idx": idx, "ability-targets": args.get("targets")}})
 	var cost = NRCostFns.card_ability_cost(state, side, ability, card, args.get("targets"))
 	ability = ability.duplicate(true)
 	ability["cost"] = cost
 	if cost != null and NRPayment.can_pay(state, side, eid, card, card.get("title"), cost) == null:
 		return
-	if bool(ability.get("action", false)):
+	if NRUtil.truthy(ability.get("action", false)):
 		NREngine.trigger_event_simult(state, side, NREid.make_eid(state), "action-played", null, {"ability-idx": idx, "card": NRUtil.select_keys(card, ["cid", "type", "title"])})
 	NREngine.resolve_ability(state, side, eid, ability, card, args.get("targets"))
 
@@ -47,7 +47,7 @@ static func play(state: NRState, side: Variant, args: Dictionary) -> void:
 		return
 	if state.get_in([NRUtil.to_side(side), "prompt-state", "prompt-type"]) != null:
 		return
-	var typ := str(card.get("type"))
+	var typ = str(card.get("type"))
 	var bac = state.get_in([NRUtil.to_side(side), "basic-action-card"])
 	if typ in ["Event", "Operation"]:
 		play_ability(state, side, {"card": bac, "ability": 3, "targets": [NRUtil.merge(args, {"card": card})]})
@@ -102,7 +102,7 @@ static func advance(state: NRState, side: Variant, eid: Dictionary, card: Dictio
 
 
 static func resolve_prompt(state: NRState, side: Variant, args: Dictionary) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var prompts: Array = state.get_in([s, "prompt"], [])
 	if prompts.is_empty():
 		return
@@ -120,13 +120,13 @@ static func select(state: NRState, side: Variant, args: Dictionary) -> void:
 	var card = NRCard.get_card(state, args.get("card"))
 	if not (card is Dictionary):
 		return
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var selected_arr: Array = state.get_in([s, "selected"], [])
 	if selected_arr.is_empty():
 		return
 	var selected: Dictionary = selected_arr[0]
 	var cards: Array = selected.get("cards", [])
-	var c2 := card.duplicate(true)
+	var c2 = card.duplicate(true)
 	c2["selected"] = true
 	cards.append(c2)
 	selected["cards"] = cards
@@ -136,7 +136,7 @@ static func select(state: NRState, side: Variant, args: Dictionary) -> void:
 	var maxn = NRUtil.get_in(ability, ["choices", "max"], 1)
 	if maxn is Callable:
 		maxn = maxn.call(state, s, ability.get("eid"), ability.get("card"), null)
-	if cards.size() >= int(maxn) or bool(args.get("done", false)):
+	if cards.size() >= int(maxn) or NRUtil.truthy(args.get("done", false)):
 		NRPrompts.resolve_select(state, s, ability.get("eid", NREid.make_eid(state)), ability.get("card"), {})
 
 
@@ -183,7 +183,7 @@ static func move_card(state: NRState, side: Variant, args: Dictionary) -> void:
 		return
 	match str(server):
 		"HQ", "R&D", "Archives", "Grip", "Stack", "Heap":
-			var dest := "hand"
+			var dest = "hand"
 			if str(server) in ["R&D", "Stack"]:
 				dest = "deck"
 			elif str(server) in ["Archives", "Heap"]:

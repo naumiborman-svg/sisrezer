@@ -5,10 +5,10 @@ extends RefCounted
 
 
 static func change(state: NRState, side: Variant, args: Dictionary) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var key: String = NRUtil.to_kw(args.get("key", ""))
 	var delta: int = int(args.get("delta", 0))
-	var eid := NREid.make_eid(state)
+	var eid = NREid.make_eid(state)
 	match key:
 		"credit", "credits":
 			if delta >= 0:

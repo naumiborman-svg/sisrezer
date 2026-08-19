@@ -11,20 +11,20 @@ static func remote_num_to_name(num: Variant) -> String:
 
 
 static func remote_to_name(zone: Variant) -> Variant:
-	var kw := ""
+	var kw = ""
 	if zone is Array:
 		kw = str(NRUtil.last_of(zone))
 	else:
 		kw = str(zone)
 	kw = NRUtil.to_kw(kw)
 	if kw.begins_with("remote"):
-		var num := kw.substr("remote".length())
+		var num = kw.substr("remote".length())
 		return remote_num_to_name(num)
 	return null
 
 
 static func central_to_name(zone: Variant) -> Variant:
-	var kw := NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
+	var kw = NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
 	match kw:
 		"hand", "hq":
 			return "HQ"
@@ -45,7 +45,7 @@ static func zone_to_name(zone: Variant) -> String:
 
 
 static func name_zone(side: Variant, zone: Variant) -> String:
-	var s := NRUtil.side_str(side)
+	var s = NRUtil.side_str(side)
 	var z: Array = NRUtil.zone_as_array(zone)
 	if z == ["hand"]:
 		return "the Grip" if s == "Runner" else "HQ"
@@ -67,7 +67,7 @@ static func name_zone(side: Variant, zone: Variant) -> String:
 
 
 static func zone_to_sort_key(zone: Variant) -> int:
-	var kw := NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
+	var kw = NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
 	match kw:
 		"archives":
 			return -3
@@ -82,7 +82,7 @@ static func zone_to_sort_key(zone: Variant) -> int:
 
 
 static func zones_to_sorted_names(zones: Array) -> Array:
-	var copy := zones.duplicate()
+	var copy = zones.duplicate()
 	copy.sort_custom(func(a, b): return zone_to_sort_key(a) < zone_to_sort_key(b))
 	var names: Array = []
 	for z in copy:
@@ -104,7 +104,7 @@ static func is_root(zone: Variant) -> bool:
 
 
 static func central_to_zone(zone: Variant) -> Variant:
-	var kw := NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
+	var kw = NRUtil.to_kw(zone if not (zone is Array) else NRUtil.last_of(zone))
 	match kw:
 		"discard":
 			return ["servers", "archives"]
@@ -121,23 +121,23 @@ static func type_to_rig_zone(typ: String) -> Array:
 
 
 static func get_server_type(zone: Variant) -> String:
-	var kw := NRUtil.to_kw(zone)
+	var kw = NRUtil.to_kw(zone)
 	if kw in ["hq", "rd", "archives"]:
 		return kw
 	return "remote"
 
 
 static func same_server(card1: Dictionary, card2: Dictionary) -> bool:
-	var z1 := NRCard.get_zone(card1)
-	var z2 := NRCard.get_zone(card2)
+	var z1 = NRCard.get_zone(card1)
+	var z2 = NRCard.get_zone(card2)
 	if z1.size() < 2 or z2.size() < 2:
 		return false
 	return NRUtil.to_kw(z1[1]) == NRUtil.to_kw(z2[1])
 
 
 static func protecting_same_server(card: Dictionary, ice: Dictionary) -> bool:
-	var z1 := NRCard.get_zone(card)
-	var z2 := NRCard.get_zone(ice)
+	var z1 = NRCard.get_zone(card)
+	var z2 = NRCard.get_zone(ice)
 	if z2.is_empty() or NRUtil.to_kw(z2[z2.size() - 1]) != "ices":
 		return false
 	var c1 = central_to_zone(z1)
@@ -147,8 +147,8 @@ static func protecting_same_server(card: Dictionary, ice: Dictionary) -> bool:
 
 
 static func in_same_server(card1: Dictionary, card2: Dictionary) -> bool:
-	var z1 := NRCard.get_zone(card1)
-	var z2 := NRCard.get_zone(card2)
+	var z1 = NRCard.get_zone(card1)
+	var z2 = NRCard.get_zone(card2)
 	return z1 == z2 and not z1.is_empty() and NRUtil.to_kw(z1[z1.size() - 1]) == "content"
 
 
@@ -156,14 +156,24 @@ static func unknown_to_kw(name_or_kw_or_zone: Variant) -> String:
 	if name_or_kw_or_zone is Array:
 		return NRUtil.to_kw(name_or_kw_or_zone[1] if name_or_kw_or_zone.size() > 1 else name_or_kw_or_zone[0])
 	if name_or_kw_or_zone is String:
-		match name_or_kw_or_zone:
-			"HQ":
+		var raw: String = name_or_kw_or_zone
+		var s := raw.to_lower()
+		if s.begins_with(":"):
+			s = s.substr(1)
+		match s:
+			"hq", "hand":
 				return "hq"
-			"R&D":
+			"rd", "r&d", "deck":
 				return "rd"
-			"Archives":
+			"archives", "discard":
 				return "archives"
+			"new remote", "new-remote":
+				return "new remote"
 			_:
-				var parts := (name_or_kw_or_zone as String).split(" ")
+				if s.begins_with("remote"):
+					return s.replace(" ", "")
+				if s.begins_with("server "):
+					return "remote" + s.substr("server ".length()).strip_edges()
+				var parts = raw.split(" ")
 				return "remote" + str(parts[parts.size() - 1])
 	return NRUtil.to_kw(name_or_kw_or_zone)

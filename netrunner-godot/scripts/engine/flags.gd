@@ -3,7 +3,7 @@ extends RefCounted
 ## Permission flags (run/turn/persistent). Port of game.core.flags.
 
 static func card_flag(card: Dictionary, flag_key: String, value: Variant = "__any__") -> bool:
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	var flags = cdef.get("flags", {})
 	if not (flags is Dictionary) or not flags.has(flag_key):
 		return false
@@ -13,18 +13,18 @@ static func card_flag(card: Dictionary, flag_key: String, value: Variant = "__an
 
 
 static func card_flag_fn(state: NRState, side: Variant, card: Dictionary, flag_key: String, value: Variant = "__any__") -> bool:
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	var funcv = NRUtil.get_in(cdef, ["flags", flag_key])
 	if not (funcv is Callable):
 		return false
 	var result = funcv.call(state, side, NREid.make_eid(state), card, null)
 	if str(value) == "__any__":
-		return bool(result)
+		return NRUtil.truthy(result)
 	return result == value
 
 
 static func any_flag_fn(state: NRState, side: Variant, flag_key: String, value: Variant, cards: Array = []) -> bool:
-	var pool := cards if not cards.is_empty() else NRBoard.all_active(state, side)
+	var pool = cards if not cards.is_empty() else NRBoard.all_active(state, side)
 	for c in pool:
 		if c is Dictionary and card_flag_fn(state, side, c, flag_key, value):
 			return true
@@ -41,7 +41,7 @@ static func check_flag(state: NRState, side: Variant, card: Dictionary, flag_typ
 	var conditions: Array = state.get_in(["stack", flag_type, flag], [])
 	for c in conditions:
 		if c is Dictionary and c.get("condition") is Callable:
-			if not bool(c["condition"].call(state, side, card)):
+			if not NRUtil.truthy(c["condition"].call(state, side, card)):
 				return false
 	return true
 
@@ -57,7 +57,7 @@ static func get_preventing_cards(state: NRState, side: Variant, card: Dictionary
 	var out: Array = []
 	for ft in flag_types:
 		for c in state.get_in(["stack", ft, flag], []):
-			if c is Dictionary and c.get("condition") is Callable and not bool(c["condition"].call(state, side, card)):
+			if c is Dictionary and c.get("condition") is Callable and not NRUtil.truthy(c["condition"].call(state, side, card)):
 				out.append(c.get("card"))
 	return out
 
@@ -168,7 +168,7 @@ static func can_rez_reason(state: NRState, side: Variant, card: Dictionary) -> V
 	if not persistent_flag(state, side, card, "can-rez"):
 		return "persistent-flag"
 	var rez_req = NRCardDefs.card_def(card).get("rez-req")
-	if rez_req is Callable and not bool(rez_req.call(state, side, NREid.make_eid(state), card, null)):
+	if rez_req is Callable and not NRUtil.truthy(rez_req.call(state, side, NREid.make_eid(state), card, null)):
 		return "req"
 	return true
 
@@ -177,7 +177,7 @@ static func can_rez(state: NRState, side: Variant, card: Dictionary, args: Dicti
 	var reason = can_rez_reason(state, side, card)
 	if reason == true:
 		return true
-	if not bool(args.get("no-toast", false)):
+	if not NRUtil.truthy(args.get("no-toast", false)):
 		NRToasts.toast(state, side, "Cannot rez %s." % NRCard.get_title(card))
 	return false
 
@@ -190,7 +190,7 @@ static func can_trash(state: NRState, side: Variant, card: Dictionary) -> bool:
 	if untrashable_while_rezzed(state, side, card) and NRCard.rezzed(card):
 		return false
 	if untrashable_while_resources(card):
-		var resources := 0
+		var resources = 0
 		for c in NRBoard.all_active_installed(state, "runner"):
 			if NRCard.resource(c):
 				resources += 1
@@ -210,7 +210,7 @@ static func can_access(state: NRState, side: Variant, card: Dictionary) -> bool:
 
 
 static func can_access_loud(state: NRState, side: Variant, card: Dictionary) -> bool:
-	var ok := can_access(state, side, card)
+	var ok = can_access(state, side, card)
 	if not ok:
 		NRToasts.toast(state, side, "Cannot access %s." % NRCard.get_title(card))
 	return ok
@@ -228,8 +228,8 @@ static func can_score(state: NRState, side: Variant, card: Dictionary, args: Dic
 	var req = NRCard.get_advancement_requirement(card)
 	if req == null:
 		return false
-	var counters := NRCard.get_counters(card, "advancement")
-	if counters < int(req) and not bool(args.get("ignore-req", false)):
+	var counters = NRCard.get_counters(card, "advancement")
+	if counters < int(req) and not NRUtil.truthy(args.get("ignore-req", false)):
 		return false
 	return check_flag_types(state, side, card, "can-score", ["current-turn", "persistent"])
 

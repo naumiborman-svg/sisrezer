@@ -8,11 +8,11 @@ static func get_rez_cost(state: NRState, side: Variant, card: Dictionary, args: 
 	if args.get("alternative-cost") != null:
 		return NRPayment.merge_costs(args["alternative-cost"])
 	var cost = NRCostFns.rez_cost(state, side, card, args)
-	var additional := NRCostFns.rez_additional_cost_bonus(state, side, card)
+	var additional = NRCostFns.rez_additional_cost_bonus(state, side, card)
 	var costs: Array = []
-	if not bool(args.get("ignore-cost", false)) and cost != null:
+	if not NRUtil.truthy(args.get("ignore-cost", false)) and cost != null:
 		costs.append(NRPayment.to_c("credit", int(cost)))
-	if not bool(card.get("disabled", false)):
+	if not NRUtil.truthy(card.get("disabled", false)):
 		costs.append_array(additional)
 	return NRPayment.merge_costs(costs)
 
@@ -21,7 +21,7 @@ static func can_pay_to_rez(state: NRState, side: Variant, eid: Dictionary, card:
 	var c = NRCard.get_card(state, card)
 	if not (c is Dictionary):
 		return false
-	var costs := get_rez_cost(state, side, c, args)
+	var costs = get_rez_cost(state, side, c, args)
 	return NRPayment.can_pay(state, side, eid, c, null, costs) != null
 
 
@@ -30,14 +30,14 @@ static func rez(state: NRState, side: Variant, eid: Dictionary, card: Dictionary
 	if not (c is Dictionary):
 		NREid.effect_completed(state, side, eid)
 		return
-	if not bool(args.get("force", false)) and not NRFlags.can_rez(state, side, c):
+	if not NRUtil.truthy(args.get("force", false)) and not NRFlags.can_rez(state, side, c):
 		NREid.effect_completed(state, side, eid)
 		return
 	if NRCard.rezzed(c):
 		NREid.effect_completed(state, side, eid)
 		return
-	var costs := get_rez_cost(state, side, c, args)
-	if not bool(args.get("ignore-cost", false)) and NRPayment.can_pay(state, side, eid, c, c.get("title"), costs) == null:
+	var costs = get_rez_cost(state, side, c, args)
+	if not NRUtil.truthy(args.get("ignore-cost", false)) and NRPayment.can_pay(state, side, eid, c, c.get("title"), costs) == null:
 		NREid.effect_completed(state, side, eid)
 		return
 	NREid.wait_for(state, eid, func(pe):
@@ -46,14 +46,14 @@ static func rez(state: NRState, side: Variant, eid: Dictionary, card: Dictionary
 		if not (payment is Dictionary) or payment.get("msg") == null:
 			NREid.effect_completed(state, side, eid)
 			return
-		var updated := c.duplicate(true)
+		var updated = c.duplicate(true)
 		updated["rezzed"] = "this-turn"
 		updated["timestamp"] = NRUtil.make_timestamp()
-		if bool(updated.get("disabled", false)):
+		if NRUtil.truthy(updated.get("disabled", false)):
 			NRUpdate.update_card(state, side, updated)
 		else:
 			updated = NRInitializing.card_init(state, side, updated, {"resolve-effect": false, "init-data": true})
-		if not bool(args.get("no-msg", false)):
+		if not NRUtil.truthy(args.get("no-msg", false)):
 			NRSay.system_msg(state, side, "%s%s" % [NRPayment.build_spend_msg(str(payment.get("msg", "")), "rez"), NRToString.card_str(state, updated if updated is Dictionary else c, {"visible": true})])
 			NRSay.implementation_msg(state, updated if updated is Dictionary else c)
 		if NRCard.ice(updated if updated is Dictionary else c):
@@ -67,7 +67,7 @@ static func rez(state: NRState, side: Variant, eid: Dictionary, card: Dictionary
 			NREngine.register_pending_event(state, "rez", updated if updated is Dictionary else c, on_rez)
 		NREngine.queue_event(state, "rez", {"card": NRCard.get_card(state, updated if updated is Dictionary else c), "cost": payment.get("cost-paid")})
 		NREngine.checkpoint(state, eid, {"duration": "rez"})
-		if bool(args.get("press-continue", false)):
+		if NRUtil.truthy(args.get("press-continue", false)):
 			NRRuns.continue_run(state, side, null)
 	)
 
@@ -77,12 +77,12 @@ static func derez(state: NRState, side: Variant, eid: Dictionary, card: Dictiona
 	if not (c is Dictionary) or not NRCard.rezzed(c):
 		NREid.effect_completed(state, side, eid)
 		return
-	if not bool(args.get("no-msg", false)):
+	if not NRUtil.truthy(args.get("no-msg", false)):
 		NRSay.system_msg(state, side, "derezzes %s" % NRToString.card_str(state, c, {"visible": true}))
 	c = NRInitializing.deactivate(state, side, c, true)
 	c["rezzed"] = false
 	NRUpdate.update_card(state, side, c)
-	if not bool(args.get("no-event", false)):
+	if not NRUtil.truthy(args.get("no-event", false)):
 		NREngine.queue_event(state, "derez", {"card": c})
 		NREngine.checkpoint(state, eid)
 	else:

@@ -22,7 +22,7 @@ static func make_timestamp() -> int:
 static func to_side(value: Variant) -> String:
 	if value == null:
 		return ""
-	var s := str(value).to_lower()
+	var s = str(value).to_lower()
 	if s.begins_with(":"):
 		s = s.substr(1)
 	if s == "corp":
@@ -33,7 +33,7 @@ static func to_side(value: Variant) -> String:
 
 
 static func side_str(side: Variant) -> String:
-	var s := to_side(side)
+	var s = to_side(side)
 	if s == "corp":
 		return "Corp"
 	if s == "runner":
@@ -83,7 +83,7 @@ static func get_in(data: Variant, path: Array, default_value: Variant = null) ->
 			return default_value
 		if cur is Dictionary:
 			if not cur.has(key):
-				var alt := _alt_key(key)
+				var alt: Variant = _alt_key(key)
 				if alt != key and cur.has(alt):
 					cur = cur[alt]
 				else:
@@ -91,7 +91,7 @@ static func get_in(data: Variant, path: Array, default_value: Variant = null) ->
 			else:
 				cur = cur[key]
 		elif cur is Array:
-			var idx := int(key)
+			var idx = int(key)
 			if idx < 0 or idx >= cur.size():
 				return default_value
 			cur = cur[idx]
@@ -109,7 +109,7 @@ static func _alt_key(key: Variant) -> Variant:
 static func assoc_in(data: Dictionary, path: Array, value: Variant) -> Dictionary:
 	if path.is_empty():
 		return data
-	var d := data
+	var d = data
 	for i in range(path.size() - 1):
 		var key = path[i]
 		if not d.has(key) or not (d[key] is Dictionary):
@@ -130,7 +130,7 @@ static func dissoc_in(data: Dictionary, path: Array) -> Dictionary:
 	if path.size() == 1:
 		data.erase(path[0])
 		return data
-	var parent_path := path.duplicate()
+	var parent_path = path.duplicate()
 	parent_path.resize(path.size() - 1)
 	var parent = get_in(data, parent_path)
 	if parent is Dictionary:
@@ -148,7 +148,7 @@ static func sub_to_zero(n: int) -> Callable:
 
 static func remove_once(arr: Array, pred: Callable) -> Array:
 	var out: Array = []
-	var removed := false
+	var removed = false
 	for item in arr:
 		if not removed and pred.call(item):
 			removed = true
@@ -195,7 +195,7 @@ static func filter_some(arr: Array) -> Array:
 
 
 static func distinct_by(arr: Array, key_fn: Callable) -> Array:
-	var seen := {}
+	var seen = {}
 	var out: Array = []
 	for item in arr:
 		var k = key_fn.call(item)
@@ -207,7 +207,7 @@ static func distinct_by(arr: Array, key_fn: Callable) -> Array:
 
 
 static func shuffle_array(arr: Array) -> Array:
-	var copy := arr.duplicate()
+	var copy = arr.duplicate()
 	copy.shuffle()
 	return copy
 
@@ -245,7 +245,7 @@ static func enumerate_str(strings: Array, sep: String = "and") -> String:
 			parts.append(str(s))
 	if parts.size() <= 2:
 		return _join_two(parts, sep)
-	var head := ", ".join(parts.slice(0, parts.size() - 1))
+	var head = ", ".join(parts.slice(0, parts.size() - 1))
 	return "%s, %s %s" % [head, sep, parts[parts.size() - 1]]
 
 
@@ -329,7 +329,7 @@ static func deepcopy(value: Variant) -> Variant:
 
 
 static func select_keys(d: Dictionary, keys: Array) -> Dictionary:
-	var out := {}
+	var out = {}
 	for k in keys:
 		if d.has(k):
 			out[k] = d[k]
@@ -337,14 +337,14 @@ static func select_keys(d: Dictionary, keys: Array) -> Dictionary:
 
 
 static func dissoc(d: Dictionary, keys: Array) -> Dictionary:
-	var out := d.duplicate(true)
+	var out = d.duplicate(true)
 	for k in keys:
 		out.erase(k)
 	return out
 
 
 static func merge(a: Dictionary, b: Dictionary) -> Dictionary:
-	var out := a.duplicate(true)
+	var out = a.duplicate(true)
 	for k in b:
 		out[k] = b[k]
 	return out
@@ -354,6 +354,23 @@ static func is_number(v: Variant) -> bool:
 	return v is int or v is float
 
 
+## Convert a Variant flag to bool. Godot 4.3 `bool(x)` only accepts bool/int/float.
+static func truthy(v: Variant) -> bool:
+	if v == null or v == false:
+		return false
+	if v is Array:
+		return not v.is_empty()
+	if v is Dictionary:
+		return not v.is_empty()
+	if v is String:
+		return v != ""
+	if v is int or v is float:
+		return v != 0
+	if v is bool:
+		return v
+	return true
+
+
 static func as_int(v: Variant, default_value: int = 0) -> int:
 	if v == null:
 		return default_value
@@ -361,7 +378,7 @@ static func as_int(v: Variant, default_value: int = 0) -> int:
 
 
 static func is_tagged(state: NRState) -> bool:
-	return bool(state.get_in(["runner", "tag", "is-tagged"], false)) or as_int(state.get_in(["runner", "tag", "total"], 0)) > 0
+	return NRUtil.truthy(state.get_in(["runner", "tag", "is-tagged"], false)) or as_int(state.get_in(["runner", "tag", "total"], 0)) > 0
 
 
 static func count_bad_pub(state: NRState) -> int:

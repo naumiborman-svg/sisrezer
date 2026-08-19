@@ -17,8 +17,8 @@ static func stealth_value(_cost: Dictionary) -> int:
 
 
 static func label(cost: Dictionary) -> String:
-	var t := str(cost.get("cost/type"))
-	var n := value(cost)
+	var t = str(cost.get("cost/type"))
+	var n = value(cost)
 	match t:
 		"click":
 			return "[Click]".repeat(maxi(n, 1)) if n > 0 else "[Click]"
@@ -67,9 +67,9 @@ static func label(cost: Dictionary) -> String:
 
 
 static func payable(cost: Dictionary, state: NRState, side: Variant, eid: Dictionary, card: Variant) -> bool:
-	var t := str(cost.get("cost/type"))
-	var n := value(cost)
-	var s := NRUtil.to_side(side)
+	var t = str(cost.get("cost/type"))
+	var n = value(cost)
+	var s = NRUtil.to_side(side)
 	match t:
 		"click":
 			return int(state.side_get(s, "click", 0)) >= n
@@ -118,7 +118,7 @@ static func payable(cost: Dictionary, state: NRState, side: Variant, eid: Dictio
 		"resource":
 			return NRBoard.all_installed_runner_type(state, "Resource").size() >= n
 		"ice":
-			var ices := 0
+			var ices = 0
 			for c in NRBoard.all_installed(state, "corp"):
 				if NRCard.ice(c):
 					ices += 1
@@ -128,17 +128,17 @@ static func payable(cost: Dictionary, state: NRState, side: Variant, eid: Dictio
 
 
 static func handler(cost: Dictionary, state: NRState, side: Variant, eid: Dictionary, card: Variant) -> void:
-	var t := str(cost.get("cost/type"))
-	var n := value(cost)
-	var s := NRUtil.to_side(side)
-	var paid := {"paid/type": t, "paid/value": n, "paid/x-value": 0, "paid/targets": []}
+	var t = str(cost.get("cost/type"))
+	var n = value(cost)
+	var s = NRUtil.to_side(side)
+	var paid = {"paid/type": t, "paid/value": n, "paid/x-value": 0, "paid/targets": []}
 	match t:
 		"click":
 			NRGaining.lose_clicks(state, s, n)
 			paid["paid/value"] = n
 		"lose-click":
 			var have: int = int(state.side_get(s, "click", 0))
-			var lost := mini(have, n)
+			var lost = mini(have, n)
 			NRGaining.lose_clicks(state, s, lost)
 			paid["paid/value"] = lost
 		"credit":
@@ -192,13 +192,13 @@ static func handler(cost: Dictionary, state: NRState, side: Variant, eid: Dictio
 				NRUpdate.update_card(state, s, card)
 		"trash-from-hand":
 			var hand: Array = state.get_in([s, "hand"], [])
-			var dumped := NRUtil.take_n(hand, n)
+			var dumped = NRUtil.take_n(hand, n)
 			for c in dumped:
 				NRMoving.move(state, s, c, "discard")
 			paid["paid/targets"] = dumped
 		"trash-from-deck":
 			var deck: Array = state.get_in([s, "deck"], [])
-			var milled := NRUtil.take_n(deck, n)
+			var milled = NRUtil.take_n(deck, n)
 			for c in milled:
 				NRMoving.move(state, s, c, "discard")
 			paid["paid/targets"] = milled
@@ -210,13 +210,13 @@ static func handler(cost: Dictionary, state: NRState, side: Variant, eid: Dictio
 		"randomly-trash-from-hand":
 			var h: Array = state.get_in([s, "hand"], []).duplicate()
 			h.shuffle()
-			var rand := NRUtil.take_n(h, n)
+			var rand = NRUtil.take_n(h, n)
 			for c in rand:
 				NRMoving.move(state, s, c, "discard")
 			paid["paid/targets"] = rand
 		_:
 			pass
-	var msg := NRPayment.cost_to_string(cost)
+	var msg = NRPayment.cost_to_string(cost)
 	NREid.complete_with_result(state, side, eid, {"msg": msg, "cost-paid": {t: paid}})
 
 
@@ -227,7 +227,7 @@ static func total_available_credits(state: NRState, side: Variant, _eid: Diction
 static func all_active_pay_credit_cards(state: NRState, side: Variant) -> Array:
 	var out: Array = []
 	for c in NRBoard.all_active_installed(state, side):
-		var cdef := NRCardDefs.card_def(c)
+		var cdef = NRCardDefs.card_def(c)
 		if cdef.has("recurring") or (c.get("counter") is Dictionary and int(c["counter"].get("recurring", 0)) > 0):
 			out.append(c)
 	return out
@@ -254,7 +254,7 @@ static func eligible_pay_stealth_credit_cards(state: NRState, side: Variant, eid
 
 
 static func total_available_stealth_credits(state: NRState, side: Variant, eid: Dictionary, card: Variant) -> int:
-	var n := 0
+	var n = 0
 	for c in eligible_pay_stealth_credit_cards(state, side, eid, card):
 		n += NRCard.get_counters(c, "credit") + NRCard.get_counters(c, "recurring")
 	return n

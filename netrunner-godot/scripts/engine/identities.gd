@@ -5,7 +5,7 @@ extends RefCounted
 
 
 static func initialize_identity(state: NRState, side: Variant) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var ident: Dictionary = state.get_in([s, "identity"], {})
 	if ident.is_empty():
 		return

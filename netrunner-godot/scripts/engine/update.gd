@@ -15,7 +15,7 @@ static func update_card(state: NRState, side: Variant, card: Dictionary) -> Vari
 	if card.get("host") is Dictionary:
 		update_hosted(state, side, card)
 		return NRCard.get_card(state, card)
-	var owner := NRFinding.get_scoring_owner(state, card)
+	var owner = NRFinding.get_scoring_owner(state, card)
 	if owner == null:
 		owner = NRUtil.to_side(card.get("side", side))
 	var z: Array = [owner] + NRUtil.zone_as_array(card.get("zone", []))
@@ -23,7 +23,7 @@ static func update_card(state: NRState, side: Variant, card: Dictionary) -> Vari
 	if not (coll is Array):
 		return null
 	var cid = card.get("cid")
-	var found := false
+	var found = false
 	var out: Array = []
 	for item in coll:
 		if not found and item is Dictionary and item.get("cid") == cid:

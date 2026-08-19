@@ -32,9 +32,9 @@ static func host(state: NRState, side: Variant, card: Dictionary, target: Dictio
 	var host_card = NRCard.get_card(state, card)
 	if not (host_card is Dictionary):
 		host_card = card
-	var hosted := target.duplicate(true)
+	var hosted = target.duplicate(true)
 	hosted["host"] = NRUtil.dissoc(host_card, ["hosted"])
-	hosted["facedown"] = bool(args.get("facedown", false))
+	hosted["facedown"] = NRUtil.truthy(args.get("facedown", false))
 	hosted["zone"] = ["onhost"]
 	hosted["timestamp"] = NRUtil.make_timestamp()
 	hosted["previous-zone"] = target.get("zone")
@@ -43,6 +43,6 @@ static func host(state: NRState, side: Variant, card: Dictionary, target: Dictio
 	hlist.append(hosted)
 	host_card["hosted"] = hlist
 	NRUpdate.update_card(state, side, host_card)
-	if NRCard.program(hosted) and not bool(args.get("no-mu", false)):
+	if NRCard.program(hosted) and not NRUtil.truthy(args.get("no-mu", false)):
 		NRMemory.init_mu_cost(state, hosted)
 	return hosted

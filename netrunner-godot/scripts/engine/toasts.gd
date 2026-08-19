@@ -5,7 +5,7 @@ extends RefCounted
 static func toast(state: NRState, side: Variant, message: String, msg_type: String = "warning", options: Dictionary = {}) -> void:
 	if message == "":
 		return
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var toasts: Array = state.get_in([s, "toast"], [])
 	toasts.append({"msg": message, "type": msg_type, "options": options, "id": NRUtil.make_uuid()})
 	state.assoc_in([s, "toast"], toasts)
@@ -13,7 +13,7 @@ static func toast(state: NRState, side: Variant, message: String, msg_type: Stri
 
 static func ack_toast(state: NRState, side: Variant, args: Dictionary) -> void:
 	var id = args.get("id")
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	var toasts: Array = state.get_in([s, "toast"], [])
 	var out: Array = []
 	for t in toasts:

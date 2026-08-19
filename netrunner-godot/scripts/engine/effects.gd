@@ -8,28 +8,28 @@ static func is_disabled_reg(state: NRState, card: Dictionary) -> bool:
 
 
 static func gather_effects(state: NRState, _side: Variant, effect_type: String) -> Array:
-	var active := str(state.getv("active-player", "corp"))
+	var active = str(state.getv("active-player", "corp"))
 	var out: Array = []
 	for e in state.getv("effects", []):
 		if not (e is Dictionary):
 			continue
 		if NRUtil.to_kw(e.get("type")) != NRUtil.to_kw(effect_type):
 			continue
-		if bool(e.get("static", false)) and e.get("card") is Dictionary and is_disabled_reg(state, e["card"]):
+		if NRUtil.truthy(e.get("static", false)) and e.get("card") is Dictionary and is_disabled_reg(state, e["card"]):
 			continue
 		out.append(e)
 	out.sort_custom(func(a, b):
-		var sa := NRUtil.to_side(NRUtil.get_in(a, ["card", "side"]))
-		var sb := NRUtil.to_side(NRUtil.get_in(b, ["card", "side"]))
-		var aa := 0 if sa == active else 1
-		var bb := 0 if sb == active else 1
+		var sa = NRUtil.to_side(NRUtil.get_in(a, ["card", "side"]))
+		var sb = NRUtil.to_side(NRUtil.get_in(b, ["card", "side"]))
+		var aa = 0 if sa == active else 1
+		var bb = 0 if sb == active else 1
 		return aa < bb
 	)
 	return out
 
 
 static func update_effect_card(state: NRState, ability: Dictionary) -> Dictionary:
-	var ab := ability.duplicate(true)
+	var ab = ability.duplicate(true)
 	if ab.get("card") is Dictionary:
 		var latest = NRCard.get_card(state, ab["card"])
 		ab["card"] = latest
@@ -39,11 +39,11 @@ static func update_effect_card(state: NRState, ability: Dictionary) -> Dictionar
 static func get_effect_maps(state: NRState, side: Variant, eid: Dictionary, effect_type: String, targets: Variant = null) -> Array:
 	var out: Array = []
 	for e in gather_effects(state, side, effect_type):
-		var ab := update_effect_card(state, e)
+		var ab = update_effect_card(state, e)
 		var req = ab.get("req")
-		var ok := true
+		var ok = true
 		if req is Callable:
-			ok = bool(req.call(state, side, eid, ab.get("card"), targets))
+			ok = NRUtil.truthy(req.call(state, side, eid, ab.get("card"), targets))
 		if ok:
 			out.append(ab)
 	return out
@@ -57,13 +57,13 @@ static func get_effect_value(state: NRState, side: Variant, eid: Dictionary, tar
 
 
 static func get_effects(state: NRState, side: Variant, effect_type: String, target: Variant = null, targets: Variant = null) -> Array:
-	var eid := NREid.make_eid(state)
+	var eid = NREid.make_eid(state)
 	var tgs: Array = []
 	if target != null:
 		tgs.append(target)
 	if targets is Array:
 		tgs.append_array(targets)
-	var maps := get_effect_maps(state, side, eid, effect_type, tgs)
+	var maps = get_effect_maps(state, side, eid, effect_type, tgs)
 	var out: Array = []
 	for m in maps:
 		out.append(get_effect_value(state, side, eid, tgs, m))
@@ -71,7 +71,7 @@ static func get_effects(state: NRState, side: Variant, effect_type: String, targ
 
 
 static func get_tagged_effects(state: NRState, side: Variant, effect_type: String, target: Variant = null, targets: Variant = null) -> Array:
-	var eid := NREid.make_eid(state)
+	var eid = NREid.make_eid(state)
 	var tgs: Array = []
 	if target != null:
 		tgs.append(target)
@@ -91,7 +91,7 @@ static func get_tagged_effects(state: NRState, side: Variant, effect_type: Strin
 
 
 static func sum_effects(state: NRState, side: Variant, effect_type: String, target: Variant = null, targets: Variant = null) -> int:
-	var total := 0
+	var total = 0
 	for v in get_effects(state, side, effect_type, target, targets):
 		if NRUtil.is_number(v):
 			total += int(v)
@@ -116,7 +116,7 @@ static func is_disabled(state: NRState, side: Variant, target: Dictionary) -> bo
 
 
 static func all_disabled_cards(state: NRState) -> Dictionary:
-	var out := {}
+	var out = {}
 	for c in NRBoard.get_all_cards(state):
 		if c is Dictionary and (is_disabled(state, null, c) or (NRCard.runner(c) and NRCard.facedown(c))):
 			out[c.get("cid")] = c
@@ -124,13 +124,13 @@ static func all_disabled_cards(state: NRState) -> Dictionary:
 
 
 static func update_disabled_cards(state: NRState) -> Dictionary:
-	var reg := all_disabled_cards(state)
+	var reg = all_disabled_cards(state)
 	state.setv("disabled-card-reg", reg)
 	return reg
 
 
 static func register_static_abilities(state: NRState, _side: Variant, card: Dictionary) -> Array:
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	var statics = cdef.get("static-abilities", [])
 	if not (statics is Array) or statics.is_empty():
 		return []
@@ -164,7 +164,7 @@ static func unregister_static_abilities(state: NRState, _side: Variant, card: Di
 
 
 static func register_lingering_effect(state: NRState, _side: Variant, card: Dictionary, ability: Dictionary) -> Dictionary:
-	var ab := {
+	var ab = {
 		"type": ability.get("type"),
 		"req": ability.get("req"),
 		"value": ability.get("value"),
@@ -183,7 +183,7 @@ static func register_lingering_effect(state: NRState, _side: Variant, card: Dict
 static func unregister_effect_by_uuid(state: NRState, _side: Variant, ability: Dictionary) -> void:
 	var uuid = ability.get("uuid")
 	var effects: Array = []
-	var removed := false
+	var removed = false
 	for e in state.getv("effects", []):
 		if not removed and e is Dictionary and e.get("uuid") == uuid:
 			removed = true
@@ -196,7 +196,7 @@ static func update_lingering_effect_durations(state: NRState, _side: Variant, fr
 	var effects: Array = []
 	for e in state.getv("effects", []):
 		if e is Dictionary and NRUtil.kw_eq(e.get("duration"), from_key):
-			var ne := e.duplicate(true)
+			var ne = e.duplicate(true)
 			ne["duration"] = to_key
 			effects.append(ne)
 		else:

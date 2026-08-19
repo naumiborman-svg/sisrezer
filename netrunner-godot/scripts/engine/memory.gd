@@ -41,10 +41,10 @@ static func get_available_mu(state: NRState) -> Array:
 
 
 static func merge_available_memory(mu_list: Array) -> Dictionary:
-	var acc := {"regular": 0, "caissa": 0, "virus": 0}
+	var acc = {"regular": 0, "caissa": 0, "virus": 0}
 	for pair in mu_list:
 		if pair is Array and pair.size() >= 2:
-			var t := str(pair[0])
+			var t = str(pair[0])
 			acc[t] = int(acc.get(t, 0)) + int(pair[1])
 		elif NRUtil.is_number(pair):
 			acc["regular"] += int(pair)
@@ -52,8 +52,8 @@ static func merge_available_memory(mu_list: Array) -> Dictionary:
 
 
 static func merge_used_memory(state: NRState, used_mu_effects: Array) -> Dictionary:
-	var acc := {"regular": 0, "caissa": 0, "virus": 0}
-	var eid := NREid.make_eid(state)
+	var acc = {"regular": 0, "caissa": 0, "virus": 0}
+	var eid = NREid.make_eid(state)
 	for effect in used_mu_effects:
 		if not (effect is Dictionary):
 			continue
@@ -78,11 +78,11 @@ static func combine_used_mu(available: Dictionary, used: Dictionary) -> int:
 
 
 static func build_new_mu(state: NRState) -> Dictionary:
-	var mu_list := get_available_mu(state)
-	var available := merge_available_memory(mu_list)
-	var used_effects := NREffects.get_effect_maps(state, "runner", NREid.make_eid(state), "used-mu")
-	var used := merge_used_memory(state, used_effects)
-	var only_for := {}
+	var mu_list = get_available_mu(state)
+	var available = merge_available_memory(mu_list)
+	var used_effects = NREffects.get_effect_maps(state, "runner", NREid.make_eid(state), "used-mu")
+	var used = merge_used_memory(state, used_effects)
+	var only_for = {}
 	for t in ["caissa", "virus"]:
 		only_for[t] = {"available": available.get(t, 0), "used": used.get(t, 0)}
 	return {
@@ -93,9 +93,9 @@ static func build_new_mu(state: NRState) -> Dictionary:
 
 
 static func update_mu(state: NRState, _side: Variant = null) -> bool:
-	var old_mu := NRUtil.select_keys(state.get_in(["runner", "memory"], {}), ["available", "used", "only-for"])
-	var new_mu := build_new_mu(state)
-	var changed := old_mu.hash() != new_mu.hash() and str(old_mu) != str(new_mu)
+	var old_mu = NRUtil.select_keys(state.get_in(["runner", "memory"], {}), ["available", "used", "only-for"])
+	var new_mu = build_new_mu(state)
+	var changed = old_mu.hash() != new_mu.hash() and str(old_mu) != str(new_mu)
 	# compare fields
 	changed = int(old_mu.get("available", 0)) != int(new_mu.get("available", 0)) or int(old_mu.get("used", 0)) != int(new_mu.get("used", 0))
 	if changed:
@@ -117,11 +117,11 @@ static func expected_mu(state: NRState, card: Dictionary) -> int:
 static func sufficient_mu(state: NRState, card: Dictionary) -> bool:
 	if not NRCard.program(card):
 		return true
-	var mu_cost := expected_mu(state, card)
-	var available := merge_available_memory(get_available_mu(state))
+	var mu_cost = expected_mu(state, card)
+	var available = merge_available_memory(get_available_mu(state))
 	var used_effects: Array = NREffects.get_effect_maps(state, "runner", NREid.make_eid(state), "used-mu")
 	used_effects.append({"type": "used-mu", "duration": "while-active", "card": card, "value": mu_cost})
-	var used := merge_used_memory(state, used_effects)
+	var used = merge_used_memory(state, used_effects)
 	return int(available.get("regular", 0)) - combine_used_mu(available, used) >= 0
 
 

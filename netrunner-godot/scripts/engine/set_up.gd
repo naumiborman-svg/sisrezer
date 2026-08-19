@@ -3,12 +3,12 @@ extends RefCounted
 ## Game creation, mulligan, keep. Port of game.core.set_up.
 
 static func build_card(card: Dictionary) -> Dictionary:
-	var s_card := NRCardDefs.server_card(str(card.get("title", "")), false)
+	var s_card = NRCardDefs.server_card(str(card.get("title", "")), false)
 	if s_card.is_empty():
 		s_card = card
 	else:
 		s_card = NRUtil.merge(s_card, card)
-	var made := NRInitializing.make_card(s_card)
+	var made = NRInitializing.make_card(s_card)
 	if card.has("art"):
 		made["art"] = card["art"]
 	return made
@@ -31,11 +31,11 @@ static func create_deck(deck: Dictionary) -> Array:
 
 
 static func mulligan(state: NRState, side: Variant, _args: Variant = null) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	NRShuffling.shuffle_into_deck(state, s, ["hand"])
 	NRDrawing.draw(state, s, NREid.make_eid(state), 5, {"suppress-event": true, "no-update-draw-stats": true})
 	var card: Dictionary = state.get_in([s, "identity"], {})
-	var cdef := NRCardDefs.card_def(card)
+	var cdef = NRCardDefs.card_def(card)
 	if cdef.get("mulligan") is Callable:
 		cdef["mulligan"].call(state, s, NREid.make_eid(state), card, null)
 	state.assoc_in([s, "keep"], "mulligan")
@@ -45,7 +45,7 @@ static func mulligan(state: NRState, side: Variant, _args: Variant = null) -> vo
 
 
 static func keep_hand(state: NRState, side: Variant, _args: Variant = null) -> void:
-	var s := NRUtil.to_side(side)
+	var s = NRUtil.to_side(side)
 	state.assoc_in([s, "keep"], "keep")
 	NRSay.system_msg(state, s, "keeps [their] hand")
 	NREngine.trigger_event(state, s, "pre-first-turn", null)
@@ -101,16 +101,16 @@ static func init_game(game: Dictionary) -> NRState:
 				corp_p = p
 			elif NRUtil.to_side(p.get("side")) == "runner" or str(p.get("side")).to_lower() == "runner":
 				runner_p = p
-	var corp_deck := create_deck(corp_p.get("deck", {}))
-	var runner_deck := create_deck(runner_p.get("deck", {}))
+	var corp_deck = create_deck(corp_p.get("deck", {}))
+	var runner_deck = create_deck(runner_p.get("deck", {}))
 	for c in corp_deck:
 		c["zone"] = ["deck"]
 	for c in runner_deck:
 		c["zone"] = ["deck"]
 	var corp_id_src: Dictionary = NRUtil.get_in(corp_p, ["deck", "identity"], {"side": "Corp", "type": "Identity", "title": "Custom Biotics: Engineered for Success"})
 	var runner_id_src: Dictionary = NRUtil.get_in(runner_p, ["deck", "identity"], {"side": "Runner", "type": "Identity", "title": "The Professor: Keeper of Knowledge"})
-	var corp_id := build_card(corp_id_src)
-	var runner_id := build_card(runner_id_src)
+	var corp_id = build_card(corp_id_src)
+	var runner_id = build_card(runner_id_src)
 	var options: Dictionary = {
 		"timer": game.get("timer"),
 		"spectatorhands": game.get("spectatorhands"),
@@ -118,7 +118,7 @@ static func init_game(game: Dictionary) -> NRState:
 		"replay-id": game.get("replay-id"),
 		"save-replay": game.get("save-replay"),
 	}
-	var state := NRState.new_state(game.get("gameid"), game.get("room"), game.get("format", "standard"), NRUtil.make_timestamp(), options, NRPlayer.new_corp(corp_p.get("user", {"username": "Corp"}), corp_id, corp_p.get("options", {}), corp_deck, NRUtil.get_in(corp_p, ["deck", "_id"]), null), NRPlayer.new_runner(runner_p.get("user", {"username": "Runner"}), runner_id, runner_p.get("options", {}), runner_deck, NRUtil.get_in(runner_p, ["deck", "_id"]), null))
+	var state = NRState.new_state(game.get("gameid"), game.get("room"), game.get("format", "standard"), NRUtil.make_timestamp(), options, NRPlayer.new_corp(corp_p.get("user", {"username": "Corp"}), corp_id, corp_p.get("options", {}), corp_deck, NRUtil.get_in(corp_p, ["deck", "_id"]), null), NRPlayer.new_runner(runner_p.get("user", {"username": "Runner"}), runner_id, runner_p.get("options", {}), runner_deck, NRUtil.get_in(runner_p, ["deck", "_id"]), null))
 	state.setv("log", [])
 	NRInitializing.card_init(state, "corp", corp_id, {"resolve-effect": true, "init-data": true})
 	NRSay.implementation_msg(state, corp_id)
@@ -128,7 +128,7 @@ static func init_game(game: Dictionary) -> NRState:
 	NREngine.fake_checkpoint(state)
 	NREngine.trigger_event(state, "corp", "pre-start-game", null)
 	NREngine.trigger_event(state, "runner", "pre-start-game", null)
-	if not bool(game.get("skip-mulligan", false)):
+	if not NRUtil.truthy(game.get("skip-mulligan", false)):
 		init_hands(state)
 	else:
 		NRDrawing.draw(state, "corp", NREid.make_eid(state), 5, {"suppress-event": true})

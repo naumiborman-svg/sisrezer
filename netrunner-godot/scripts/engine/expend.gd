@@ -19,7 +19,7 @@ static func expend(ex: Dictionary) -> Dictionary:
 				return false
 			var req = ex.get("req")
 			if req is Callable:
-				return bool(req.call(state, side, eid, card, targets))
+				return NRUtil.truthy(req.call(state, side, eid, card, targets))
 			return true,
 		"async": true,
 		"action": true,
@@ -40,7 +40,7 @@ static func expend_ability(state: NRState, side: Variant, args: Dictionary) -> v
 	card = NRCard.get_card(state, card)
 	if not (card is Dictionary) or not expendable(state, card):
 		return
-	var cdef := NRCardDefs.card_def(card)
-	var ab := expend(cdef.get("expend", {}))
-	var eid := NREid.make_eid(state, {"source": card, "source-type": "ability"})
+	var cdef = NRCardDefs.card_def(card)
+	var ab = expend(cdef.get("expend", {}))
+	var eid = NREid.make_eid(state, {"source": card, "source-type": "ability"})
 	NREngine.resolve_ability(state, side, eid, ab, card, args.get("targets"))

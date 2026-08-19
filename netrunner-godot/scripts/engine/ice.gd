@@ -27,7 +27,7 @@ static func set_current_ice(state: NRState, card: Variant = "__auto__") -> void:
 	if not (state.getv("run") is Dictionary):
 		return
 	if str(card) == "__auto__":
-		var run_ice := get_run_ices(state)
+		var run_ice = get_run_ices(state)
 		var pos: int = int(state.get_in(["run", "position"], 0))
 		if pos > 0 and pos <= run_ice.size():
 			set_current_ice(state, run_ice[pos - 1])
@@ -57,9 +57,9 @@ static func build_sub(sub: Dictionary, cid: Variant, args: Dictionary = {}) -> D
 		"label": NRUtil.make_label(sub),
 		"from-cid": cid,
 		"sub-effect": sub.get("sub-effect", NRUtil.dissoc(sub, ["breakable"])),
-		"variable": bool(args.get("variable", false)),
-		"printed": bool(args.get("printed", false)),
-		"source": sub.get("source", ("printed" if bool(args.get("printed")) else null)),
+		"variable": NRUtil.truthy(args.get("variable", false)),
+		"printed": NRUtil.truthy(args.get("printed", false)),
+		"source": sub.get("source", ("printed" if NRUtil.truthy(args.get("printed")) else null)),
 		"breakable": sub.get("breakable", true),
 	}
 
@@ -68,12 +68,12 @@ static func add_sub(ice: Dictionary, sub: Dictionary, cid: Variant = null, args:
 	if cid == null:
 		cid = ice.get("cid")
 	var curr: Array = ice.get("subroutines", [])
-	var position := 0
-	if bool(args.get("back", false)):
+	var position = 0
+	if NRUtil.truthy(args.get("back", false)):
 		position = 1
-	elif bool(args.get("front", false)):
+	elif NRUtil.truthy(args.get("front", false)):
 		position = -1
-	var new_sub := build_sub(sub, cid, args)
+	var new_sub = build_sub(sub, cid, args)
 	new_sub["position"] = position
 	curr = curr.duplicate()
 	curr.append(new_sub)
@@ -81,13 +81,13 @@ static func add_sub(ice: Dictionary, sub: Dictionary, cid: Variant = null, args:
 	for i in range(curr.size()):
 		curr[i] = curr[i].duplicate(true)
 		curr[i]["index"] = i
-	var out := ice.duplicate(true)
+	var out = ice.duplicate(true)
 	out["subroutines"] = curr
 	return out
 
 
 static func break_subroutine(ice: Dictionary, sub: Dictionary, breaker: Variant = null) -> Dictionary:
-	var replacement := sub.duplicate(true)
+	var replacement = sub.duplicate(true)
 	replacement["broken"] = true
 	if breaker is Dictionary:
 		replacement["breaker"] = breaker.get("cid")
@@ -96,7 +96,7 @@ static func break_subroutine(ice: Dictionary, sub: Dictionary, breaker: Variant 
 	var idx: int = int(sub.get("index", -1))
 	if idx >= 0 and idx < subs.size():
 		subs[idx] = replacement
-	var out := ice.duplicate(true)
+	var out = ice.duplicate(true)
 	out["subroutines"] = subs
 	return out
 
@@ -108,7 +108,7 @@ static func break_subroutine_bang(state: NRState, ice: Dictionary, sub: Dictiona
 
 
 static func break_all_subroutines(ice: Dictionary, breaker: Variant = null) -> Dictionary:
-	var cur := ice
+	var cur = ice
 	for sub in ice.get("subroutines", []):
 		if sub is Dictionary:
 			cur = break_subroutine(cur, sub, breaker)
@@ -121,7 +121,7 @@ static func break_all_subroutines_bang(state: NRState, ice: Dictionary, breaker:
 
 static func any_subs_broken(ice: Dictionary) -> bool:
 	for sub in ice.get("subroutines", []):
-		if sub is Dictionary and bool(sub.get("broken")):
+		if sub is Dictionary and NRUtil.truthy(sub.get("broken")):
 			return true
 	return false
 
@@ -131,17 +131,17 @@ static func all_subs_broken(ice: Dictionary) -> bool:
 	if subs.is_empty():
 		return true
 	for sub in subs:
-		if not (sub is Dictionary) or not bool(sub.get("broken")):
+		if not (sub is Dictionary) or not NRUtil.truthy(sub.get("broken")):
 			return false
 	return true
 
 
 static func reset_all_subs(ice: Dictionary) -> Dictionary:
-	var out := ice.duplicate(true)
+	var out = ice.duplicate(true)
 	var subs: Array = []
 	for sub in ice.get("subroutines", []):
 		if sub is Dictionary:
-			var s := sub.duplicate(true)
+			var s = sub.duplicate(true)
 			s.erase("broken")
 			s.erase("fired")
 			s.erase("resolve")
@@ -170,13 +170,13 @@ static func get_strength(card: Dictionary) -> int:
 
 static func ice_strength(state: NRState, ice: Dictionary) -> int:
 	var base: int = int(ice.get("strength", 0))
-	var cdef := NRCardDefs.card_def(ice)
+	var cdef = NRCardDefs.card_def(ice)
 	if cdef.get("strength-bonus") is Callable:
 		base += int(cdef["strength-bonus"].call(state, "corp", NREid.make_eid(state), ice, null))
 	elif NRUtil.is_number(cdef.get("strength-bonus")):
 		base += int(cdef["strength-bonus"])
 	base += NREffects.sum_effects(state, "corp", "ice-strength", ice)
-	base += int(ice.get("advance-counter", 0)) if NRCard.has_subtype(ice, "Power") or bool(ice.get("strength-boost-from-advancement")) else 0
+	base += int(ice.get("advance-counter", 0)) if NRCard.has_subtype(ice, "Power") or NRUtil.truthy(ice.get("strength-boost-from-advancement")) else 0
 	return base + int(ice.get("extra-strength", 0))
 
 
@@ -185,7 +185,7 @@ static func update_ice_strength(state: NRState, side: Variant, ice: Dictionary) 
 	if not (c is Dictionary) or not NRCard.ice(c):
 		return false
 	var prev = c.get("current-strength")
-	var new_s := ice_strength(state, c)
+	var new_s = ice_strength(state, c)
 	if prev != new_s:
 		c = c.duplicate(true)
 		c["current-strength"] = new_s
@@ -195,7 +195,7 @@ static func update_ice_strength(state: NRState, side: Variant, ice: Dictionary) 
 
 
 static func update_all_ice(state: NRState, side: Variant) -> bool:
-	var changed := false
+	var changed = false
 	for ice in NRBoard.all_installed(state, "corp"):
 		if ice is Dictionary and NRCard.ice(ice):
 			if update_ice_strength(state, side, ice):
@@ -205,7 +205,7 @@ static func update_all_ice(state: NRState, side: Variant) -> bool:
 
 static func breaker_strength(state: NRState, breaker: Dictionary) -> int:
 	var base: int = int(breaker.get("strength", 0))
-	var cdef := NRCardDefs.card_def(breaker)
+	var cdef = NRCardDefs.card_def(breaker)
 	if cdef.get("strength-bonus") is Callable:
 		base += int(cdef["strength-bonus"].call(state, "runner", NREid.make_eid(state), breaker, null))
 	base += NREffects.sum_effects(state, "runner", "breaker-strength", breaker)
@@ -218,7 +218,7 @@ static func update_breaker_strength(state: NRState, side: Variant, card: Diction
 	if not (c is Dictionary):
 		return false
 	var prev = c.get("current-strength")
-	var new_s := breaker_strength(state, c)
+	var new_s = breaker_strength(state, c)
 	if prev != new_s:
 		c = c.duplicate(true)
 		c["current-strength"] = new_s
@@ -228,7 +228,7 @@ static func update_breaker_strength(state: NRState, side: Variant, card: Diction
 
 
 static func update_all_icebreakers(state: NRState, side: Variant) -> bool:
-	var changed := false
+	var changed = false
 	for c in NRBoard.all_active_installed(state, "runner"):
 		if c is Dictionary and NRCard.has_subtype(c, "Icebreaker"):
 			if update_breaker_strength(state, side, c):
@@ -261,16 +261,16 @@ static func resolve_subroutine(state: NRState, side: Variant, eid: Dictionary, i
 	if not (c is Dictionary):
 		NREid.effect_completed(state, side, eid)
 		return
-	if bool(sub.get("broken")) or sub.get("resolve") == false:
+	if NRUtil.truthy(sub.get("broken")) or sub.get("resolve") == false:
 		NREid.effect_completed(state, side, eid)
 		return
 	var effect: Dictionary = sub.get("sub-effect", {})
 	NRSay.system_msg(state, "corp", "%s fires %s" % [NRCard.get_title(c), sub.get("label", "a subroutine")])
-	var fired := sub.duplicate(true)
+	var fired = sub.duplicate(true)
 	fired["fired"] = true
-	var updated := c.duplicate(true)
+	var updated = c.duplicate(true)
 	var subs: Array = updated.get("subroutines", []).duplicate()
-	var idx := int(sub.get("index", -1))
+	var idx = int(sub.get("index", -1))
 	if idx >= 0 and idx < subs.size():
 		subs[idx] = fired
 		updated["subroutines"] = subs
@@ -285,7 +285,7 @@ static func resolve_unbroken_subs(state: NRState, side: Variant, eid: Dictionary
 		return
 	var to_fire: Array = []
 	for sub in c.get("subroutines", []):
-		if sub is Dictionary and not bool(sub.get("broken")) and sub.get("resolve", true) != false:
+		if sub is Dictionary and not NRUtil.truthy(sub.get("broken")) and sub.get("resolve", true) != false:
 			to_fire.append(sub)
 	_fire_next(state, side, eid, c, to_fire, 0)
 
@@ -308,6 +308,6 @@ static func break_subs_event_context(state: NRState, ice: Dictionary, broken: Ar
 static func unbroken_subroutines_choice(ice: Dictionary) -> Array:
 	var out: Array = []
 	for sub in ice.get("subroutines", []):
-		if sub is Dictionary and not bool(sub.get("broken")) and sub.get("resolve", true) != false:
+		if sub is Dictionary and not NRUtil.truthy(sub.get("broken")) and sub.get("resolve", true) != false:
 			out.append(NRUtil.make_label(sub.get("sub-effect", sub)))
 	return out

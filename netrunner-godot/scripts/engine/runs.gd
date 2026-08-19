@@ -3,11 +3,11 @@ extends RefCounted
 ## Run pipeline: initiation, approach, encounter, movement, success, jack-out, end. Port of game.core.runs.
 
 static func total_run_cost(state: NRState, side: Variant, card: Variant, args: Dictionary = {}) -> Array:
-	if bool(args.get("ignore-costs", false)):
+	if NRUtil.truthy(args.get("ignore-costs", false)):
 		return []
-	var cost := NRCostFns.run_cost(state, side, card, args)
+	var cost = NRCostFns.run_cost(state, side, card, args)
 	var costs: Array = []
-	if bool(args.get("click-run", false)):
+	if NRUtil.truthy(args.get("click-run", false)):
 		costs.append(NRPayment.to_c("click", 1))
 	if cost > 0:
 		costs.append(NRPayment.to_c("credit", cost))
@@ -24,18 +24,18 @@ static func get_runnable_zones(state: NRState, side: Variant = "runner", eid: Di
 	for z in zones:
 		if not (z in restricted):
 			permitted.append(z)
-	if bool(args.get("ignore-costs", false)):
+	if NRUtil.truthy(args.get("ignore-costs", false)):
 		return permitted
 	var out: Array = []
 	for z in permitted:
-		var costs := total_run_cost(state, side, card, NRUtil.merge(args, {"server": NRServers.unknown_to_kw(z)}))
+		var costs = total_run_cost(state, side, card, NRUtil.merge(args, {"server": NRServers.unknown_to_kw(z)}))
 		if NRPayment.can_pay(state, "runner", eid, card, null, costs) != null:
 			out.append(z)
 	return out
 
 
 static func can_run_server(state: NRState, server: Variant) -> bool:
-	var kw := NRServers.unknown_to_kw(server)
+	var kw = NRServers.unknown_to_kw(server)
 	for z in get_runnable_zones(state):
 		if NRServers.unknown_to_kw(z) == kw:
 			return true
@@ -57,7 +57,7 @@ static func update_current_encounter(state: NRState, key: String, value: Variant
 	var enc = get_current_encounter(state)
 	if not (enc is Dictionary):
 		return
-	var updated := enc.duplicate(true)
+	var updated = enc.duplicate(true)
 	updated[key] = value
 	var all: Array = state.getv("encounters", [])
 	all[all.size() - 1] = updated
@@ -89,8 +89,8 @@ static func set_next_phase(state: NRState, phase: String) -> String:
 
 
 static func make_run(state: NRState, side: Variant, eid: Dictionary, server: Variant, card: Variant = null, args: Dictionary = {}) -> void:
-	var cost_args := NRUtil.merge(args, {"server": NRServers.unknown_to_kw(server)})
-	var costs := total_run_cost(state, side, card, cost_args)
+	var cost_args = NRUtil.merge(args, {"server": NRServers.unknown_to_kw(server)})
+	var costs = total_run_cost(state, side, card, cost_args)
 	var c = NRCard.get_card(state, card) if card is Dictionary else card
 	eid = eid.duplicate(true)
 	eid["source-type"] = "make-run"
@@ -98,7 +98,7 @@ static func make_run(state: NRState, side: Variant, eid: Dictionary, server: Var
 		NREid.effect_completed(state, side, eid)
 		return
 	state.dissoc_in(["end-run", "ended"])
-	if bool(args.get("click-run", false)):
+	if NRUtil.truthy(args.get("click-run", false)):
 		state.assoc_in(["runner", "register", "made-click-run"], true)
 		NRSay.play_sfx(state, side, "click-run")
 	NREid.wait_for(state, eid, func(pe):
@@ -111,14 +111,14 @@ static func make_run(state: NRState, side: Variant, eid: Dictionary, server: Var
 		if server is String or NRUtil.to_kw(server) in ["hq", "rd", "archives"] or str(server).begins_with("remote"):
 			dest = [NRServers.unknown_to_kw(server)]
 		else:
-			var z := NRBoard.server_to_zone(state, server)
+			var z = NRBoard.server_to_zone(state, server)
 			dest = [z[z.size() - 1]]
 		var ices: Array = state.get_in(["corp", "servers"] + dest + ["ices"], [])
-		var n := ices.size()
-		var pay_str := str(payment.get("msg", ""))
+		var n = ices.size()
+		var pay_str = str(payment.get("msg", ""))
 		if pay_str != "":
 			NRSay.system_msg(state, "runner", "%s%s" % [NRPayment.build_spend_msg(pay_str, "make a run on", "makes a run on"), NRServers.zone_to_name(dest)])
-		var run_id := NREid.make_eid(state)
+		var run_id = NREid.make_eid(state)
 		state.setv("per-run", null)
 		state.setv("run", {
 			"run-id": run_id,
@@ -161,7 +161,7 @@ static func continue_run(state: NRState, side: Variant, _args: Variant = null) -
 	if get_current_encounter(state) != null:
 		_continue_encounter(state, side)
 		return
-	var phase := str(state.get_in(["run", "phase"], ""))
+	var phase = str(state.get_in(["run", "phase"], ""))
 	match phase:
 		"initiation":
 			_continue_initiation(state, side)
@@ -233,7 +233,7 @@ static func encounter_ice(state: NRState, side: Variant, eid: Dictionary, ice: D
 static func _start_encounter_ice(state: NRState, side: Variant, _eid: Variant) -> void:
 	set_phase(state, "encounter-ice")
 	var ice = NRIce.get_current_ice(state)
-	var e := NREid.make_eid(state)
+	var e = NREid.make_eid(state)
 	if ice is Dictionary:
 		encounter_ice(state, side, e, ice)
 
@@ -243,7 +243,7 @@ static func _continue_encounter(state: NRState, side: Variant) -> void:
 	if not (enc is Dictionary):
 		return
 	var no_action = enc.get("no-action")
-	if (no_action != null and NRUtil.to_side(no_action) != NRUtil.to_side(side)) or bool(enc.get("bypass")):
+	if (no_action != null and NRUtil.to_side(no_action) != NRUtil.to_side(side)) or NRUtil.truthy(enc.get("bypass")):
 		encounter_ends(state, side, NREid.make_eid(state))
 	else:
 		update_current_encounter(state, "no-action", side)
@@ -255,7 +255,7 @@ static func encounter_ends(state: NRState, side: Variant, eid: Dictionary) -> vo
 	var ice = NRIce.get_current_ice(state)
 	update_current_encounter(state, "ending", true)
 	var enc = get_current_encounter(state)
-	if enc is Dictionary and bool(enc.get("bypass")) and ice is Dictionary:
+	if enc is Dictionary and NRUtil.truthy(enc.get("bypass")) and ice is Dictionary:
 		NREngine.queue_event(state, "bypassed-ice", ice)
 		NRSay.system_msg(state, "runner", "bypasses %s" % ice.get("title"))
 	NREid.wait_for(state, eid, func(ne):
@@ -266,7 +266,7 @@ static func encounter_ends(state: NRState, side: Variant, eid: Dictionary) -> vo
 			clear_encounter(state)
 			handle_end_run(state, side, eid)
 			return
-		if bool(state.get_in(["end-run", "ended"])) or state.getv("encounters", []).size() > 1 or state.getv("run") == null or bool(state.get_in(["run", "successful"])):
+		if NRUtil.truthy(state.get_in(["end-run", "ended"])) or state.getv("encounters", []).size() > 1 or state.getv("run") == null or NRUtil.truthy(state.get_in(["run", "successful"])):
 			if ice is Dictionary:
 				NRIce.reset_all_subs_bang(state, ice)
 			clear_encounter(state)
@@ -289,11 +289,11 @@ static func encounter_ends(state: NRState, side: Variant, eid: Dictionary) -> vo
 
 
 static func _start_movement(state: NRState, side: Variant, eid: Variant) -> void:
-	var prev := str(state.get_in(["run", "phase"], ""))
+	var prev = str(state.get_in(["run", "phase"], ""))
 	var pos: int = int(state.get_in(["run", "position"], 0))
 	var ice = NRIce.get_current_ice(state)
-	var pass_ice := prev in ["approach-ice", "encounter-ice"] and ice is Dictionary
-	var new_pos := (pos - 1) if pass_ice else pos
+	var pass_ice = prev in ["approach-ice", "encounter-ice"] and ice is Dictionary
+	var new_pos = (pos - 1) if pass_ice else pos
 	set_phase(state, "movement")
 	if pass_ice:
 		NRSay.system_msg(state, "runner", "passes %s" % NRToString.card_str(state, ice))
@@ -304,7 +304,7 @@ static func _start_movement(state: NRState, side: Variant, eid: Variant) -> void
 	var e: Dictionary = eid if eid is Dictionary else NREid.make_eid(state)
 	NREngine.checkpoint(state, e)
 	NRIce.reset_all_ice(state, side)
-	if check_for_empty_server(state) or bool(state.get_in(["end-run", "ended"])):
+	if check_for_empty_server(state) or NRUtil.truthy(state.get_in(["end-run", "ended"])):
 		handle_end_run(state, side, e)
 	elif state.get_in(["run", "next-phase"]) != null:
 		start_next_phase(state, side, e)
@@ -316,8 +316,8 @@ static func _continue_movement(state: NRState, side: Variant) -> void:
 		if NRUtil.to_side(side) == "runner":
 			NRSay.system_msg(state, side, "will continue the run")
 		return
-	var e := NREid.make_eid(state)
-	if check_for_empty_server(state) or bool(state.get_in(["end-run", "ended"])):
+	var e = NREid.make_eid(state)
+	if check_for_empty_server(state) or NRUtil.truthy(state.get_in(["end-run", "ended"])):
 		handle_end_run(state, side, e)
 	elif int(state.get_in(["run", "position"], 0)) > 0:
 		set_next_phase(state, "approach-ice")
@@ -333,7 +333,7 @@ static func approach_server(state: NRState, side: Variant, eid: Dictionary) -> v
 	NREid.wait_for(state, eid, func(ne):
 		NREngine.checkpoint(state, ne)
 	, func(_r):
-		if check_for_empty_server(state) or bool(state.get_in(["end-run", "ended"])):
+		if check_for_empty_server(state) or NRUtil.truthy(state.get_in(["end-run", "ended"])):
 			handle_end_run(state, side, eid)
 		elif state.get_in(["run", "next-phase"]) != null:
 			start_next_phase(state, side, eid)
@@ -355,11 +355,11 @@ static func successful_run(state: NRState, _side: Variant) -> void:
 	state.assoc_in(["run", "successful"], true)
 	NRSay.system_msg(state, "runner", "makes a successful run on %s" % NRServers.zone_to_name(state.get_in(["run", "server"])))
 	NREngine.queue_event(state, "successful-run", {"server": state.get_in(["run", "server"])})
-	var eid := NREid.make_eid(state)
+	var eid = NREid.make_eid(state)
 	NREid.wait_for(state, eid, func(ne):
 		NREngine.checkpoint(state, ne)
 	, func(_r):
-		if bool(state.get_in(["run", "prevent-access"])):
+		if NRUtil.truthy(state.get_in(["run", "prevent-access"])):
 			handle_end_run(state, "runner", eid)
 		else:
 			NREid.wait_for(state, eid, func(ne2):
@@ -381,7 +381,7 @@ static func check_for_empty_server(state: NRState) -> bool:
 
 
 static func jack_out(state: NRState, side: Variant, args: Variant = null) -> void:
-	var eid := NREid.make_eid(state)
+	var eid = NREid.make_eid(state)
 	if not (state.getv("run") is Dictionary):
 		NREid.effect_completed(state, side, eid)
 		return
@@ -400,7 +400,7 @@ static func handle_end_run(state: NRState, side: Variant, eid: Dictionary) -> vo
 	if not (run is Dictionary):
 		NREid.effect_completed(state, side, eid)
 		return
-	var successful := bool(run.get("successful", false))
+	var successful = NRUtil.truthy(run.get("successful", false))
 	if not successful:
 		NREngine.queue_event(state, "unsuccessful-run", {"server": run.get("server")})
 	NREngine.queue_event(state, "run-ends", {"server": run.get("server"), "successful": successful})
@@ -430,7 +430,7 @@ static func run_cleanup(state: NRState, side: Variant, eid: Dictionary) -> void:
 static func redirect_run(state: NRState, side: Variant, server: Variant, phase: Variant = null) -> void:
 	if not (state.getv("run") is Dictionary):
 		return
-	var dest_zone := NRBoard.server_to_zone(state, server)
+	var dest_zone = NRBoard.server_to_zone(state, server)
 	var dest = dest_zone[dest_zone.size() - 1]
 	var num_ice: int = state.get_in(["corp", "servers", dest, "ices"], []).size()
 	NRSay.play_sfx(state, side, "redirect")
@@ -453,7 +453,7 @@ static func gain_run_credits(state: NRState, eid: Dictionary, n: int) -> void:
 
 
 static func toggle_auto_no_action(state: NRState, _side: Variant, _args: Variant = null) -> void:
-	var cur := bool(state.get_in(["run", "corp-auto-no-action"], false))
+	var cur = NRUtil.truthy(state.get_in(["run", "corp-auto-no-action"], false))
 	state.assoc_in(["run", "corp-auto-no-action"], not cur)
 
 
