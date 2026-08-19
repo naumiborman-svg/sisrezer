@@ -202,6 +202,13 @@ func _paint_actions() -> void:
 		var d := Label.new()
 		d.text = str(state.get("reason", "Game over"))
 		action_box.add_child(d)
+		for item: Variant in state.get("actions", []):
+			if item is Dictionary and str(item.get("command", "")) == "return_gauntlet":
+				var b := Button.new()
+				b.text = str(item.get("label", "RETURN TO GAUNTLET"))
+				b.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				b.pressed.connect(_to_title)
+				action_box.add_child(b)
 		return
 	if _ai_watch:
 		var w := Label.new()

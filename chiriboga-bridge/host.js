@@ -5,6 +5,7 @@ const fs = require("fs");
 const http = require("http");
 const path = require("path");
 const { JSDOM, VirtualConsole } = require("jsdom");
+const gauntletHub = require("./gauntlet-hub");
 
 const ENGINE = path.resolve(__dirname, "../chiriboga-engine");
 const PORT = Number(process.env.CHIRIBOGA_PORT || 1043);
@@ -31,6 +32,7 @@ const ENGINE_ONLY_SETS = ["gauntlet", "tutorial"];
 const AFTER_SETS = ["decks.js", "runcalculator.js", "ai_corp.js", "ai_runner.js"];
 
 const games = new Map();
+const campaigns = new Map();
 let catalogCache = null;
 
 function setFiles() {
@@ -60,6 +62,11 @@ function evalFile(window, rel) {
   if (rel === "ai_corp.js") extra = "\nwindow.CorpAI = CorpAI;";
   if (rel === "ai_runner.js") extra = "\nwindow.RunnerAI = RunnerAI;";
   window.eval(fs.readFileSync(full, "utf8") + extra + "\n//# sourceURL=" + rel);
+}
+
+function evalBridgeFile(window, name) {
+  const full = path.join(__dirname, name);
+  window.eval(fs.readFileSync(full, "utf8") + "\n//# sourceURL=" + name);
 }
 
 function dummySprite() {
@@ -189,6 +196,7 @@ function makeDom(query) {
     <canvas></canvas>
     <div class="netrunner-bg-watermark"></div>
     <div id="modal"><div id="modalcontent"></div></div>
+    <div id="hostile-takeover-modal"><div id="hostile-takeover-perks"></div></div>
     <label><input id="debugmenu-toggle" type="checkbox"></label>
   </body></html>`;
   const virtualConsole = new VirtualConsole();
@@ -288,6 +296,16 @@ function buildCatalog() {
       { id: "beat8gauntlet", name: "Complete a regular Gauntlet", description: "Survive a Gauntlet of 8 opponents." },
       { id: "beat12gauntlet", name: "Complete a long Gauntlet", description: "Survive a Gauntlet of 12 opponents." },
     ],
+    gauntlet: {
+      startingCredits: (window.gauntletConfig && window.gauntletConfig.startingCredits) || 30,
+      length: (window.gauntletConfig && window.gauntletConfig.gauntletLength) || 8,
+      shop: (window.gauntletConfig && window.gauntletConfig.shop) || {},
+      packs: ((window.gauntletConfig && window.gauntletConfig.cardPacks) || []).map((p) => ({
+        name: p.name,
+        cost: p.cost,
+        cardQuantity: p.cardQuantity,
+      })),
+    },
     _window: window,
   };
   return catalogCache;
@@ -422,6 +440,31 @@ function queryFromBody(body) {
     side = requestedSide;
   }
   if (mode === "gauntlet") {
+    if (body.campaign_id) {
+      const campaign = campaigns.get(body.campaign_id);
+      if (!campaign) return { query: "", meta: { mode, error: "unknown campaign" } };
+      const fight = gauntletHub.fightPayload(w, campaign, Number(body.opponent_index || 0));
+      if (!fight.ok) return { query: "", meta: { mode, error: fight.error } };
+      params.set("p", "r");
+      params.set("r", fight.r);
+      params.set("c", fight.c);
+      params.set("g", fight.g);
+      return {
+        query: params.toString(),
+        meta: {
+          mode,
+          side: "runner",
+          campaign_id: body.campaign_id,
+          opponent_index: Number(body.opponent_index || 0),
+          gauntlet: {
+            length: campaign.length,
+            defeated: campaign.defeated,
+            opponents: campaign.opponents.map((o) => ({ name: o.gauntletCorpName || o.name })),
+            hub: true,
+          },
+        },
+      };
+    }
     const length = Number(body.gauntlet_length || body.length || 4);
     const opponents = gauntletOpponents(length);
     player = findPrecon("Gateway Runner") || findPrecon("My First Runner");
@@ -477,6 +520,7 @@ function createSession(query) {
       console.log(src);
     }
   };
+  evalBridgeFile(window, "gauntlet-perks.js");
   window.Init();
   return { window, created: Date.now() };
 }
@@ -615,7 +659,16 @@ function gameView(id, session) {
   const active = w.activePlayer === w.corp ? "corp" : "runner";
   const viewing = w.viewingPlayer === w.corp ? "corp" : "runner";
   const actions = humanActions(w);
-  if (win && session.meta && session.meta.gauntlet) {
+  if (win && session.meta && session.meta.campaign_id) {
+    session._winner = win;
+    const campaign = campaigns.get(session.meta.campaign_id);
+    if (campaign) gauntletHub.resolveFight(catalogWindow(), campaign, session, id);
+    actions.push({
+      command: "return_gauntlet",
+      index: 0,
+      label: "RETURN TO GAUNTLET",
+    });
+  } else if (win && session.meta && session.meta.gauntlet && !session.meta.gauntlet.hub) {
     const g = session.meta.gauntlet;
     if (win === "runner" && g.defeated + 1 < g.length) {
       actions.push({
@@ -653,15 +706,34 @@ function gameView(id, session) {
     log: (w.godotLog || []).slice(-40),
     tutorial: (w.cardRenderer && w.cardRenderer.tutorialText && w.cardRenderer.tutorialText.text) || "",
     actions,
-    gauntlet: session.meta && session.meta.gauntlet
-      ? {
-          length: session.meta.gauntlet.length,
-          defeated: session.meta.gauntlet.defeated,
-          opponent: session.meta.gauntlet.opponents[session.meta.gauntlet.defeated]
-            ? session.meta.gauntlet.opponents[session.meta.gauntlet.defeated].name
-            : "",
-        }
-      : null,
+    gauntlet: session.meta && session.meta.campaign_id
+      ? campaignSummary(session.meta.campaign_id)
+      : session.meta && session.meta.gauntlet
+        ? {
+            length: session.meta.gauntlet.length,
+            defeated: session.meta.gauntlet.defeated,
+            opponent: session.meta.gauntlet.opponents[session.meta.gauntlet.defeated]
+              ? session.meta.gauntlet.opponents[session.meta.gauntlet.defeated].name
+              : "",
+          }
+        : null,
+    campaign_id: session.meta ? session.meta.campaign_id || "" : "",
+  };
+}
+
+function campaignSummary(campaignId) {
+  const campaign = campaigns.get(campaignId);
+  if (!campaign) return { id: campaignId };
+  const opp = campaign.opponents[campaign.currentOpponentIndex || 0] || {};
+  return {
+    id: campaignId,
+    hub: true,
+    length: campaign.length,
+    defeated: campaign.defeated,
+    credits: campaign.credits,
+    complete: !!campaign.complete,
+    lost: !!campaign.lost,
+    opponent: opp.gauntletCorpName || opp.name || "",
   };
 }
 
@@ -743,12 +815,30 @@ async function settle(session, loops = 80) {
 
 async function newGame(body) {
   const { query, meta } = queryFromBody(body || {});
+  if (meta && meta.error) return { ok: false, error: meta.error };
+  if (!query) return { ok: false, error: "could not build match" };
   const session = createSession(query);
   session.meta = meta || {};
   const id = Math.random().toString(36).slice(2, 12);
   games.set(id, session);
   await settle(session);
   return gameView(id, session);
+}
+
+function newCampaign(body) {
+  const w = catalogWindow();
+  const campaign = gauntletHub.newCampaign(w, body || {});
+  const id = Math.random().toString(36).slice(2, 12);
+  campaigns.set(id, campaign);
+  return gauntletHub.publicView(w, id, campaign);
+}
+
+function campaignAction(body) {
+  const id = body.id || body.campaign_id;
+  const campaign = campaigns.get(id);
+  if (!campaign) return { ok: false, error: "unknown campaign" };
+  body.campaign_id = id;
+  return gauntletHub.applyAction(catalogWindow(), campaign, body);
 }
 
 async function nextGauntlet(id, session) {
@@ -775,6 +865,14 @@ async function applyAction(id, body) {
   const command = String(body.command || "");
   if (!command) return { ok: false, error: "missing command", ...gameView(id, session) };
   if (command === "next_gauntlet") return nextGauntlet(id, session);
+  if (command === "return_gauntlet") {
+    return {
+      ok: true,
+      return_gauntlet: true,
+      campaign_id: session.meta ? session.meta.campaign_id : "",
+      ...gameView(id, session),
+    };
+  }
   const index = Number(body.index || 0);
   try {
     if (body.choice === true || body.resolve === true) {
@@ -850,6 +948,7 @@ const server = http.createServer(async (req, res) => {
         version: "0.6.13-BETA",
         source: "https://chiriboga.cronbach.com",
         games: games.size,
+        campaigns: campaigns.size,
         port: PORT,
       });
     }
@@ -875,6 +974,21 @@ const server = http.createServer(async (req, res) => {
       const out = await applyAction(body.id, body);
       return json(res, out.ok === false && out.error === "unknown game" ? 404 : 200, out);
     }
+    if (url.pathname === "/chiriboga/gauntlet/new" && (req.method === "POST" || req.method === "GET")) {
+      const body = req.method === "POST" ? await readBody(req) : Object.fromEntries(url.searchParams);
+      return json(res, 200, newCampaign(body));
+    }
+    if (url.pathname === "/chiriboga/gauntlet/state" && req.method === "GET") {
+      const id = url.searchParams.get("id");
+      const campaign = campaigns.get(id);
+      if (!campaign) return json(res, 404, { ok: false, error: "unknown campaign" });
+      return json(res, 200, gauntletHub.publicView(catalogWindow(), id, campaign));
+    }
+    if (url.pathname === "/chiriboga/gauntlet/action" && req.method === "POST") {
+      const body = await readBody(req);
+      const out = campaignAction(body);
+      return json(res, out.ok === false && out.error === "unknown campaign" ? 404 : 200, out);
+    }
     json(res, 404, { ok: false, error: "not found" });
   } catch (e) {
     console.error(e);
@@ -894,4 +1008,4 @@ if (require.main === module) {
   });
 }
 
-module.exports = { createSession, newGame, queryFromBody, catalog, previewPair };
+module.exports = { createSession, newGame, queryFromBody, catalog, previewPair, newCampaign, campaignAction };

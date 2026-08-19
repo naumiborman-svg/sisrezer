@@ -41,6 +41,20 @@ func action(id: String, act: Dictionary) -> Dictionary:
 	return await _req(HTTPClient.METHOD_POST, "/chiriboga/action", body)
 
 
+func gauntlet_new(payload: Dictionary) -> Dictionary:
+	return await _req(HTTPClient.METHOD_POST, "/chiriboga/gauntlet/new", payload)
+
+
+func gauntlet_state(id: String) -> Dictionary:
+	return await _req(HTTPClient.METHOD_GET, "/chiriboga/gauntlet/state?id=%s" % id.uri_encode())
+
+
+func gauntlet_action(id: String, act: Dictionary) -> Dictionary:
+	var body: Dictionary = act.duplicate(true)
+	body["id"] = id
+	return await _req(HTTPClient.METHOD_POST, "/chiriboga/gauntlet/action", body)
+
+
 func _req(method: int, path: String, payload: Variant = null) -> Dictionary:
 	last_error = ""
 	if _http == null:

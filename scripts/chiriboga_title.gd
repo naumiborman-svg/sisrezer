@@ -17,6 +17,8 @@ var _host_ok := false
 var _jinteki_ok := false
 var _jinteki_cards := 0
 var _threat := 1
+var _campaign: Dictionary = {}
+var _hack_index := -1
 
 
 func _fill(node: Control, pad := Vector4.ZERO) -> void:
@@ -179,6 +181,15 @@ func _load_catalog() -> void:
 			var p: Variant = catalog["preview"]
 			if p is Dictionary:
 				preview = p
+	var saved_id := str(settings.get("gauntlet_campaign_id", ""))
+	if saved_id != "" and _host_ok:
+		var hub: Dictionary = await client.gauntlet_state(saved_id)
+		if bool(hub.get("ok", false)):
+			_campaign = hub
+			_show_gauntlet()
+			return
+		settings["gauntlet_campaign_id"] = ""
+		ChiribogaSave.save_settings(settings)
 	_show_main()
 
 
@@ -268,13 +279,183 @@ func _show_custom() -> void:
 func _show_gauntlet() -> void:
 	_clear(_left)
 	_left.add_child(_label("GAUNTLET", 22, GREEN))
-	_left.add_child(_label("Sequential corp opponents. Shop / hack / perks from gauntlet.php stay on the JS host as match chain.", 13, DIM, true))
-	var length := int(settings.get("gauntlet_length", 4))
-	_left.add_child(_label("LENGTH  %s" % length, 14, GREEN))
-	_left.add_child(_menu_btn("NEW", func() -> void:
-		_start({"mode": "gauntlet", "side": "runner", "gauntlet_length": length})
+	if _campaign.is_empty():
+		_left.add_child(_label("Build a runner from the Solo Mode pool, buy Aesop packs, hack corp perks, then fight. Length from settings.", 13, DIM, true))
+		var length := int(settings.get("gauntlet_length", 4))
+		_left.add_child(_label("LENGTH  %s" % length, 14, GREEN))
+		_left.add_child(_menu_btn("NEW RUN", func() -> void: _gauntlet_new()))
+		_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
+		return
+	var scroll := ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_left.add_child(scroll)
+	var box := VBoxContainer.new()
+	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	box.add_theme_constant_override("separation", 6)
+	scroll.add_child(box)
+	if bool(_campaign.get("complete", false)):
+		box.add_child(_label("GAUNTLET COMPLETE", 16, GREEN))
+	elif bool(_campaign.get("lost", false)):
+		box.add_child(_label("GAUNTLET LOST", 16, Color(1, 0.35, 0.35)))
+	box.add_child(_label("%s  ·  %sc  ·  deck %s  ·  %s/%s" % [
+		_campaign.get("identity_title", ""),
+		_campaign.get("credits", 0),
+		_campaign.get("deck_size", 0),
+		_campaign.get("defeated", 0),
+		_campaign.get("length", 0),
+	], 13, GREEN, true))
+	var msg := str(_campaign.get("last_message", ""))
+	if msg != "":
+		box.add_child(_label(msg, 12, DIM, true))
+	var shop: Dictionary = _campaign.get("shop", {})
+	box.add_child(_label("AESOP'S PAWN SHOP", 14, MUTED))
+	for pack: Variant in shop.get("packs", []):
+		if pack is Dictionary:
+			var captured: Dictionary = pack
+			box.add_child(_menu_btn("BUY %s  %sc" % [captured.get("name", ""), captured.get("cost", 10)], func() -> void:
+				_gauntlet_act({"action": "buy", "index": int(captured.get("index", 0))})
+			))
+	box.add_child(_menu_btn("RE-ROLL PACKS  %sc" % shop.get("reroll_cost", 5), func() -> void:
+		_gauntlet_act({"action": "reroll"})
+	))
+	if bool(_campaign.get("extra_sellable", false)):
+		box.add_child(_menu_btn("SELL EXTRA CARDS", func() -> void: _gauntlet_act({"action": "sell"})))
+	if bool(_campaign.get("identity_locked", true)):
+		box.add_child(_menu_btn("UNLOCK IDENTITY  %sc" % shop.get("unlock_cost", 50), func() -> void:
+			_gauntlet_act({"action": "unlock"})
+		))
+	else:
+		for ident: Variant in _campaign.get("identities", []):
+			if ident is Dictionary:
+				var ident_id := int(ident.get("id", 0))
+				box.add_child(_menu_btn("%s  %s" % [ident.get("title", ""), ident.get("faction", "")], func() -> void:
+					_gauntlet_act({"action": "set_identity", "identity": ident_id})
+				))
+	box.add_child(_label("OPPONENTS", 14, MUTED))
+	if _hack_index >= 0:
+		_paint_hack(box)
+	else:
+		for opp: Variant in _campaign.get("opponents", []):
+			if opp is Dictionary:
+				_paint_opponent(box, opp)
+	box.add_child(_menu_btn("ABANDON RUN", func() -> void:
+		_campaign = {}
+		_hack_index = -1
+		settings["gauntlet_campaign_id"] = ""
+		ChiribogaSave.save_settings(settings)
+		_show_gauntlet()
 	))
 	_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
+
+
+func _paint_opponent(box: VBoxContainer, opp: Dictionary) -> void:
+	var defeated := bool(opp.get("defeated", false))
+	var color := MUTED if defeated else GREEN
+	var perk := str(opp.get("perk_name", ""))
+	var mark := "■" if defeated else ("★" if bool(opp.get("is_boss", false)) else "□")
+	box.add_child(_label("%s  %s  ·  %s  ·  perk %s" % [
+		mark, opp.get("name", ""), opp.get("faction", ""), perk
+	], 13, color, true))
+	if defeated or bool(_campaign.get("complete", false)) or bool(_campaign.get("lost", false)):
+		return
+	var idx := int(opp.get("index", 0))
+	var row := HBoxContainer.new()
+	var fight := _menu_btn("FIGHT", func() -> void: _gauntlet_fight(idx))
+	fight.custom_minimum_size = Vector2(140, 32)
+	var hack := _menu_btn("HACK", func() -> void:
+		_hack_index = idx
+		_show_gauntlet()
+	)
+	hack.custom_minimum_size = Vector2(140, 32)
+	row.add_child(fight)
+	row.add_child(hack)
+	box.add_child(row)
+
+
+func _paint_hack(box: VBoxContainer) -> void:
+	var opp := _campaign_opponent(_hack_index)
+	if opp.is_empty():
+		_hack_index = -1
+		return
+	var hack: Dictionary = _campaign.get("hack", {})
+	box.add_child(_label("HACK  %s" % opp.get("name", ""), 16, GREEN))
+	box.add_child(_label("Prepare bonus +%s%%" % hack.get("prepare_bonus", 0), 12, DIM))
+	var chances: Dictionary = opp.get("chances", {})
+	box.add_child(_menu_btn("PREPARE HACK  %sc" % hack.get("prepare_cost", 3), func() -> void:
+		_gauntlet_act({"action": "prepare", "opponent_index": _hack_index})
+	))
+	if bool(opp.get("decklist_revealed", false)):
+		for card: Variant in opp.get("decklist", []):
+			if card is Dictionary:
+				box.add_child(_label("%sx  %s" % [card.get("count", 1), card.get("title", "")], 12, DIM))
+	else:
+		box.add_child(_menu_btn("VIEW DECKLIST  %sc  %s%%" % [hack.get("view_decklist_cost", 5), chances.get("decklist", 0)], func() -> void:
+			_gauntlet_act({"action": "hack_decklist", "opponent_index": _hack_index})
+		))
+	if bool(opp.get("has_perk", false)) and not bool(opp.get("perk_revealed", false)):
+		box.add_child(_menu_btn("VIEW PERK  %sc  %s%%" % [hack.get("view_perk_cost", 5), chances.get("perk", 0)], func() -> void:
+			_gauntlet_act({"action": "hack_perk", "opponent_index": _hack_index})
+		))
+	elif bool(opp.get("has_perk", false)):
+		box.add_child(_label("PERK  %s%s" % [opp.get("perk_name", ""), "  [DISABLED]" if bool(opp.get("perk_disabled", false)) else ""], 13, GREEN))
+	if bool(opp.get("has_perk", false)) and not bool(opp.get("perk_disabled", false)):
+		var cost := hack.get("disable_boss_perk_cost", 30) if bool(opp.get("is_boss", false)) else hack.get("disable_perk_cost", 15)
+		box.add_child(_menu_btn("DISABLE PERK  %sc  %s%%" % [cost, chances.get("disable", 0)], func() -> void:
+			_gauntlet_act({"action": "disable_perk", "opponent_index": _hack_index})
+		))
+	box.add_child(_menu_btn("BACK TO OPPONENTS", func() -> void:
+		_hack_index = -1
+		_show_gauntlet()
+	))
+
+
+func _campaign_opponent(index: int) -> Dictionary:
+	for item: Variant in _campaign.get("opponents", []):
+		if item is Dictionary and int(item.get("index", -1)) == index:
+			return item
+	return {}
+
+
+func _gauntlet_new() -> void:
+	var hub: Dictionary = await client.gauntlet_new({"length": int(settings.get("gauntlet_length", 4))})
+	if not bool(hub.get("ok", false)):
+		_campaign = {"last_message": str(hub.get("error", "gauntlet host unavailable"))}
+		_show_gauntlet()
+		return
+	_campaign = hub
+	settings["gauntlet_campaign_id"] = str(hub.get("id", ""))
+	ChiribogaSave.save_settings(settings)
+	_hack_index = -1
+	_show_gauntlet()
+
+
+func _gauntlet_act(payload: Dictionary) -> void:
+	var id := str(_campaign.get("id", settings.get("gauntlet_campaign_id", "")))
+	if id == "":
+		return
+	var hub: Dictionary = await client.gauntlet_action(id, payload)
+	if hub.has("credits") or bool(hub.get("ok", false)):
+		_campaign = hub
+		_campaign["ok"] = true
+	else:
+		_campaign["last_message"] = str(hub.get("error", "action failed"))
+	_show_gauntlet()
+
+
+func _gauntlet_fight(index: int) -> void:
+	var id := str(_campaign.get("id", ""))
+	if id == "":
+		return
+	settings["gauntlet_campaign_id"] = id
+	ChiribogaSave.save_settings(settings)
+	_start({
+		"mode": "gauntlet",
+		"engine": "chiriboga",
+		"side": "runner",
+		"campaign_id": id,
+		"opponent_index": index,
+	})
 
 
 func _show_tutorial() -> void:
@@ -354,7 +535,7 @@ func _show_credits() -> void:
 	box.add_child(_label("CREDITS", 22, GREEN))
 	box.add_child(_label("This Netrunner Solo Mode extension for the Chiriboga engine is developed by DrBo6. It adds a more refined interface and game modes.", 13, DIM, true))
 	box.add_child(_label("Chiriboga is a Netrunner engine developed by bobtheuberfish. It implements Android: Netrunner gameplay with an AI opponent.", 13, DIM, true))
-	box.add_child(_label("Full card rules come from mtgred/netrunner (Clojure, 2000+ cards) when lein run is up on :1042. Tutorials still use the Chiriboga JS engine on :1043.", 13, DIM, true))
+	box.add_child(_label("Godot hosts the real drbo6/chiriboga JS Solo Mode (749 implemented cards, 71 precons). Gauntlet shop / hack / perks run on the Node host from gauntletConfig. Full 2065-card rules come from mtgred/netrunner when lein run is up on :1042.", 13, DIM, true))
 	box.add_child(_label("GPL-3.0  ·  chiriboga.cronbach.com  ·  github.com/mtgred/netrunner  ·  github.com/bobtheuberfish/chiriboga", 12, MUTED, true))
 	_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
 

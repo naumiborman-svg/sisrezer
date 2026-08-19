@@ -48,13 +48,54 @@ func _initialize() -> void:
 		push_error("catalog missing precons")
 		quit(1)
 		return
-	print("CHIRIBOGA_BRIDGE_OK phase=%s actions=%s corp=%s runner=%s log=%s precons=%s" % [
+	var hub: Dictionary = await client.gauntlet_new({"length": 4, "seed": "godot-test"})
+	if not bool(hub.get("ok", false)) or str(hub.get("id", "")) == "":
+		push_error("gauntlet new failed: %s" % hub.get("error", client.last_error))
+		quit(1)
+		return
+	if int(hub.get("credits", 0)) != 30:
+		push_error("gauntlet starting credits %s" % hub.get("credits", 0))
+		quit(1)
+		return
+	if (hub.get("shop", {}).get("packs", []) as Array).size() != 3:
+		push_error("gauntlet shop packs missing")
+		quit(1)
+		return
+	if (hub.get("opponents", []) as Array).size() != 4:
+		push_error("gauntlet opponents %s" % (hub.get("opponents", []) as Array).size())
+		quit(1)
+		return
+	var before := int(hub.get("credits", 0))
+	var bought: Dictionary = await client.gauntlet_action(str(hub["id"]), {"action": "buy", "index": 0})
+	if int(bought.get("credits", before)) >= before:
+		push_error("buy pack did not spend credits")
+		quit(1)
+		return
+	if (bought.get("last_pack", []) as Array).is_empty():
+		push_error("buy pack produced no cards")
+		quit(1)
+		return
+	var fight: Dictionary = await client.new_game({
+		"mode": "gauntlet",
+		"campaign_id": str(hub["id"]),
+		"opponent_index": 0,
+		"side": "runner",
+	})
+	if not bool(fight.get("ok", false)) or str(fight.get("id", "")) == "":
+		push_error("gauntlet fight failed: %s" % fight.get("error", client.last_error))
+		quit(1)
+		return
+	print("CHIRIBOGA_BRIDGE_OK phase=%s actions=%s corp=%s runner=%s log=%s precons=%s gauntlet_credits=%s packs=%s opponents=%s fight_id=%s" % [
 		after.get("phase", ""),
 		(after.get("actions", []) as Array).size(),
 		after.get("corp", {}).get("credits", 0),
 		after.get("runner", {}).get("credits", 0),
 		(after.get("log", []) as Array).size(),
 		(catalog.get("precons", []) as Array).size(),
+		bought.get("credits", 0),
+		(bought.get("shop", {}).get("packs", []) as Array).size(),
+		(bought.get("opponents", []) as Array).size(),
+		fight.get("id", ""),
 	])
 	quit(0)
 

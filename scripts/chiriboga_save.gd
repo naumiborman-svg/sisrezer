@@ -10,6 +10,7 @@ static func default_settings() -> Dictionary:
 		"crt": true,
 		"debug": false,
 		"gauntlet_length": 4,
+		"gauntlet_campaign_id": "",
 		"alternate_corps": true,
 	}
 

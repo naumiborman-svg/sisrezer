@@ -1,6 +1,6 @@
 # Chiriboga（Godot 复刻）
 
-[chiriboga.cronbach.com](https://chiriboga.cronbach.com) 的 Godot 4.7 客户端。菜单和教程对齐原站；**完整卡牌规则**在 [mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Clojure 引擎上跑（`lein run` :1042）。Tutorial 1–6 和 Gauntlet 仍用 Chiriboga JS（:1043）。
+[chiriboga.cronbach.com](https://chiriboga.cronbach.com) 的 Godot 4.7 客户端。菜单和教程对齐原站 **DrBo6 Solo Mode**（`drbo6/chiriboga`）。规则权威是 vendored 的 JS 引擎（`chiriboga-engine/`，749 张已实现卡牌）和可选的 [mtgred/netrunner](https://github.com/mtgred/netrunner) Clojure 引擎（`lein run` :1042，2065 张牌）。Gauntlet 的商店 / hack / perks 由 Node host 按 `gauntletConfig` 驱动，对局仍进 Chiriboga JS。
 
 启动：
 
@@ -10,9 +10,24 @@
 godot --path .
 ```
 
-标题菜单对齐原站：QUICK GAME、CUSTOM GAME、GAUNTLET、TUTORIAL 1–8、ACHIEVEMENTS、SETTINGS、CREDITS。Jinteki 活着时 Quick/Custom/教程 7–8 用官方预组（`jinteki.preconstructed`，2065 张牌）；其余模式用 `chiriboga-engine/precons/`。
+标题菜单对齐原站：QUICK GAME、CUSTOM GAME、GAUNTLET（Aesop 商店 / hack / fight）、TUTORIAL 1–8、ACHIEVEMENTS、SETTINGS、CREDITS。Jinteki 活着时 Quick/Custom/教程 7–8 用官方预组（`jinteki.preconstructed`，2065 张牌）；Gauntlet 和教程 1–6 用 `chiriboga-engine/`。
 
 引擎 GPL-3.0，源码在 `chiriboga-engine/`。卡图为 NSG CC BY-ND。
+
+## Solo Mode 覆盖（相对 drbo6/chiriboga 实测规模）
+
+| 层 | 仓库规模 | Godot 复刻怎么跑 |
+| --- | --- | --- |
+| 规则引擎 | `phase.js` 2147 · `mechanics.js` 2012 · `runcalculator.js` 1414 · `checks.js` 568 · `utility.js` 4273（~10.4k） | 原文件在 `chiriboga-engine/`，Node+jsdom host `:1043` 执行，不重写成 GDScript |
+| AI | `ai_corp.js` 3409 · `ai_runner.js` 2890（6.3k） | 同上，对局里 Corp/Runner AI 仍是原脚本 |
+| 渲染 | `cardrenderer.js` 2494 · `particlesystems.js` 430（不含 pixi） | Headless dummy Pixi；Godot CRT 画文字局面，不移植 Pixi |
+| 交互 | `command.js` 1041 · `init.js` 2634 · `decks.js` 958 · `config.js` 437（~5k） | Host 调 `Init` / `ExecuteChosen`；Godot 按钮映射 `command` |
+| PHP Solo Mode | `index.php` 2525 · `engine.php` 684 · `decklauncher.php` 2429 · `gauntlet.php` 4956（10.6k） | 菜单对齐 `index.php`；perk 应用从 `engine.php` 抽到 `chiriboga-bridge/gauntlet-perks.js`；Gauntlet 商店/hack/fight 在 `gauntlet-hub.js`（`gauntletConfig`）；完整可视化组卡器仍只在 `decklauncher.php` |
+| 样式 | `style.css` 3.8k | Godot CRT 主题，不加载该 CSS |
+| 卡牌数据 | `sets/` 13 文件 ~940KB；引擎实现 **749** 张（NSG 全池元数据 2394；Jinteki 导出 2065） | 13 个 set 文件原样加载；`carddata.json` 749 |
+| 预组 | `precons/` 71 套 ~3k 行 | Host catalog 暴露全部 71 套 |
+
+Godot 客户端本身是 CRT 壳：`chiriboga_title.gd` / `chiriboga_board.gd` / `chiriboga_client.gd`。规则和 AI 不在 GDScript 里重写。
 
 ---
 
@@ -25,7 +40,7 @@ godot --path .
 
 桥接补丁在 `clojure-bridge/`，用 `./clojure-bridge/apply.sh` 装进 mtgred/netrunner 源码树后重启服务器。
 
-Quick / Custom / Tutorial 7–8 在 Jinteki 活着时走 **mtgred/netrunner**（2065 张牌、官方预组对阵）。Tutorial 1–6 和 Gauntlet 仍用 Chiriboga JS。
+Quick / Custom / Tutorial 7–8 在 Jinteki 活着时走 **mtgred/netrunner**（2065 张牌、官方预组对阵）。Tutorial 1–6 和 Gauntlet（含商店 / hack / perks）仍用 Chiriboga JS。
 
 ## 运行要求
 
