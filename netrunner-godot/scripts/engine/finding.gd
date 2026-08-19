@@ -32,3 +32,11 @@ static func get_scoring_owner(state: NRState, card: Dictionary) -> Variant:
 	if find_cid(cid, state.get_in(["runner", "scored"], [])) != null:
 		return "runner"
 	return null
+
+
+static func all_installed(state: NRState, side: Variant) -> Array:
+	return NRBoard.all_installed(state, side)
+
+
+static func get_all_installed(state: NRState) -> Array:
+	return NRBoard.get_all_installed(state)

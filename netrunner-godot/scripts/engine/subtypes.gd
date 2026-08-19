@@ -33,7 +33,7 @@ static func update_subtypes_for_card(state: NRState, card: Dictionary) -> bool:
 	if str(old_s) != str(new_s):
 		c = c.duplicate(true)
 		c["subtypes"] = new_s
-		NRUpdate.update!(state, NRUtil.to_side(c.get("side")), c)
+		NRUpdate.update_card(state, NRUtil.to_side(c.get("side")), c)
 		return true
 	return false
 

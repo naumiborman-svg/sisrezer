@@ -19,7 +19,7 @@ static func update_advancement_requirement(state: NRState, agenda: Dictionary) -
 	if prev != new_req:
 		var c := agenda.duplicate(true)
 		c["current-advancement-requirement"] = new_req
-		NRUpdate.update!(state, "corp", c)
+		NRUpdate.update_card(state, "corp", c)
 		return true
 	return false
 
@@ -52,7 +52,7 @@ static func update_all_agenda_points(state: NRState, _side: Variant = null) -> b
 				if prev != np:
 					var c := agenda.duplicate(true)
 					c["current-points"] = np
-					NRUpdate.update!(state, side, c)
+					NRUpdate.update_card(state, side, c)
 					changed = true
 		var user_adj := NREffects.sum_effects(state, side, "user-agenda-points", side)
 		var scored_pts := 0

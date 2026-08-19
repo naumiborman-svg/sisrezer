@@ -252,3 +252,13 @@ static func can_host(_state: NRState, card: Dictionary) -> bool:
 
 static func when_scored(card: Dictionary) -> bool:
 	return NRCardDefs.card_def(card).has("on-score") or card_flag(card, "has-abilities-when-stolen", true)
+
+
+static func can_play(state: NRState, side: Variant, card: Dictionary, _ignore: bool = false) -> bool:
+	if card.is_empty():
+		return false
+	if NREffects.is_disabled_reg(state, card):
+		return false
+	if NRCard.in_hand(card) or NRCard.in_discard(card):
+		return true
+	return NRCard.installed(card)

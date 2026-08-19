@@ -2,7 +2,11 @@ class_name NRUpdate
 extends RefCounted
 ## In-place card updates. Port of game.core.update.
 
-static func update!(state: NRState, side: Variant, card: Dictionary) -> Variant:
+static func update(state: NRState, side: Variant, card: Dictionary) -> Variant:
+	return update_card(state, side, card)
+
+
+static func update_card(state: NRState, side: Variant, card: Dictionary) -> Variant:
 	if str(card.get("type")) == "Identity":
 		if NRUtil.to_side(side) == NRUtil.to_side(card.get("side")):
 			state.assoc_in([NRUtil.to_side(side), "identity"], card)
@@ -48,4 +52,4 @@ static func update_hosted(state: NRState, side: Variant, card: Dictionary) -> vo
 		updated["hosted"] = out
 		update_hosted(state, side, updated)
 	elif card.get("host") == null:
-		update!(state, side, card)
+		update_card(state, side, card)

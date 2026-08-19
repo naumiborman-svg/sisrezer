@@ -6,7 +6,7 @@ static func shuffle_coll(c: Array) -> Array:
 	return NRUtil.shuffle_array(c)
 
 
-static func shuffle!(state: NRState, side: Variant, kw: String, args: Dictionary = {}) -> void:
+static func shuffle_zone(state: NRState, side: Variant, kw: String, args: Dictionary = {}) -> void:
 	var s := NRUtil.to_side(side)
 	if kw not in ["deck", "hand", "discard"]:
 		return
@@ -27,7 +27,7 @@ static func shuffle_into_deck(state: NRState, side: Variant, zones: Array = ["ha
 	var s := NRUtil.to_side(side)
 	for zone in zones:
 		NRMoving.move_zone(state, s, NRUtil.to_kw(zone), "deck")
-	shuffle!(state, s, "deck")
+	shuffle_zone(state, s, "deck")
 
 
 static func shuffle_cards_into_deck(state: NRState, from_side: Variant, card: Dictionary, targets: Array, shuffle_side: Variant = null) -> void:
@@ -41,7 +41,7 @@ static func shuffle_cards_into_deck(state: NRState, from_side: Variant, card: Di
 		if NRUtil.zone_as_array(t.get("zone")) != ["deck"]:
 			NRMoving.move(state, ss, t, "deck")
 	NRSay.system_msg(state, from_side, "uses %s to shuffle cards into %s" % [card.get("title", "a card"), "R&D" if ss == "corp" else "the Stack"])
-	shuffle!(state, ss, "deck")
+	shuffle_zone(state, ss, "deck")
 
 
 static func shuffle_deck(state: NRState, side: Variant, args: Dictionary = {}) -> void:

@@ -183,8 +183,17 @@ static func condition_counter(card: Dictionary) -> bool:
 	return is_type(card, "Counter")
 
 
+static func expendable(state: NRState, card: Dictionary) -> bool:
+	var cdef := NRCardDefs.card_def(card)
+	return cdef.has("expend") and not NREffects.is_disabled_reg(state, card)
+
+
 static func basic_action(card: Dictionary) -> bool:
 	return is_type(card, "Basic Action")
+
+
+static func expendable(state: NRState, card: Dictionary) -> bool:
+	return NRCardDefs.card_def(card).has("expend") and not NREffects.is_disabled_reg(state, card)
 
 
 static func has_subtype(card: Dictionary, subtype: String) -> bool:

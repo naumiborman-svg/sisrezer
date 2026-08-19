@@ -9,7 +9,7 @@ static func add_prop(state: NRState, side: Variant, eid: Dictionary, card: Dicti
 		return
 	c = c.duplicate(true)
 	c[prop_type] = int(c.get(prop_type, 0)) + n
-	var updated = NRUpdate.update!(state, side, c)
+	var updated = NRUpdate.update_card(state, side, c)
 	var payload := {"counter-type": prop_type, "amount": n, "placed": args.get("placed")}
 	if prop_type == "advance-counter":
 		if updated is Dictionary and NRCard.ice(updated) and NRCard.rezzed(updated):
@@ -42,7 +42,7 @@ static func add_counter(state: NRState, side: Variant, eid: Dictionary, card: Di
 	var key := NRUtil.to_kw(prop_type)
 	ctr[key] = int(ctr.get(key, 0)) + n
 	c["counter"] = ctr
-	var updated = NRUpdate.update!(state, side, c)
+	var updated = NRUpdate.update_card(state, side, c)
 	NREngine.queue_event(state, "counter-added", {"card": updated, "counter-type": key, "amount": n, "placed": args.get("placed")})
 	if not bool(args.get("suppress-checkpoint", false)):
 		NREngine.checkpoint(state, eid)
@@ -54,4 +54,4 @@ static func set_prop(state: NRState, side: Variant, card: Dictionary, pairs: Dic
 	var c := card.duplicate(true)
 	for k in pairs:
 		c[k] = pairs[k]
-	NRUpdate.update!(state, side, c)
+	NRUpdate.update_card(state, side, c)

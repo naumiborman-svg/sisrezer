@@ -244,7 +244,7 @@ static func enumerate_str(strings: Array, sep: String = "and") -> String:
 		if s != null and str(s) != "":
 			parts.append(str(s))
 	if parts.size() <= 2:
-		return sep.join([" %s " % sep] if false else []) if false else _join_two(parts, sep)
+		return _join_two(parts, sep)
 	var head := ", ".join(parts.slice(0, parts.size() - 1))
 	return "%s, %s %s" % [head, sep, parts[parts.size() - 1]]
 
@@ -386,3 +386,11 @@ static func server_card(title: String) -> Dictionary:
 static func used_this_turn(cid: String, state: NRState) -> bool:
 	var per = state.getv("per-turn", {})
 	return per is Dictionary and per.has(cid)
+
+
+static func ability_context(targets: Variant) -> Dictionary:
+	if targets is Dictionary:
+		return targets
+	if targets is Array and targets.size() > 0 and targets[0] is Dictionary:
+		return targets[0]
+	return {}

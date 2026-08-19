@@ -183,13 +183,13 @@ static func handler(cost: Dictionary, state: NRState, side: Variant, eid: Dictio
 		"advancement":
 			if card is Dictionary:
 				card["advance-counter"] = maxi(0, int(card.get("advance-counter", 0)) - n)
-				NRUpdate.update!(state, s, card)
+				NRUpdate.update_card(state, s, card)
 		"power", "virus", "agenda":
 			if card is Dictionary:
 				var ctr: Dictionary = card.get("counter", {})
 				ctr[t] = maxi(0, int(ctr.get(t, 0)) - n)
 				card["counter"] = ctr
-				NRUpdate.update!(state, s, card)
+				NRUpdate.update_card(state, s, card)
 		"trash-from-hand":
 			var hand: Array = state.get_in([s, "hand"], [])
 			var dumped := NRUtil.take_n(hand, n)

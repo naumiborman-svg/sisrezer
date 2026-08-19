@@ -143,6 +143,10 @@ static func can_pay(state: NRState, side: Variant, eid: Dictionary, card: Varian
 	return costs
 
 
+static func has_enough(state: NRState, side: Variant, eid: Dictionary, card: Variant, costs: Variant) -> bool:
+	return can_pay(state, side, eid, card, null, costs) != null
+
+
 static func cost_targets(eid: Dictionary, cost_type: String) -> Variant:
 	return NRUtil.get_in(eid, ["cost-paid", cost_type, "paid/targets"])
 
