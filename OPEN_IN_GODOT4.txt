@@ -15,6 +15,8 @@ Requires
 - Compatibility renderer (no Vulkan required)
 - 1280x720 window
 - Windows 10+ / Linux x86_64 / macOS 11+ (Apple Silicon) or 10.15+ (Intel)
-- Offline; no server, Java, or Mongo
+- Offline GDScript beginner mode needs no server
+- Full Clojure mode needs a local Jinteki at http://127.0.0.1:1042
+  (apply clojure-bridge/apply.sh, then lein run)
 
 The project uses config/features 4.7 + Compatibility renderer.

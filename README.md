@@ -1,8 +1,11 @@
 # Jinteki (Godot)
 
-[mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Godot 4.7 移植：System Gateway **Beginner** 教学套牌，打到 **6** 议程分。
+[mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Godot 4.7 客户端。两条规则路径：
 
-卡牌数据与卡图来自 Jinteki 使用的 [NoahTheDuke/netrunner-data](https://github.com/NoahTheDuke/netrunner-data) / NetrunnerDB；规则是可玩的核心循环，不是 2000+ 张牌的完整 Clojure 引擎。
+1. **离线 GDScript**：System Gateway **Beginner** 教学套牌，打到 **6** 议程分。卡图来自 [NoahTheDuke/netrunner-data](https://github.com/NoahTheDuke/netrunner-data) / NetrunnerDB。这是可玩的核心循环，不是 2000+ 张牌的完整规则。
+2. **完整 Clojure 引擎**：本机跑 Jinteki（`lein run`，默认 `http://127.0.0.1:1042`）。Godot 通过 `/godot/*` JSON 桥把每一条动作交给 JVM 上的 `process-action`。卡牌效果以 Clojure 源码为准。
+
+桥接补丁在 `clojure-bridge/`，用 `./clojure-bridge/apply.sh` 装进 mtgred/netrunner 源码树后重启服务器。
 
 ## 运行要求
 
@@ -13,8 +16,8 @@
 | 窗口 | 1280×720 起，可拉伸 |
 | 系统 | Windows 10+、Linux x86_64，或 macOS 11+（Apple Silicon）/ 10.15+（Intel） |
 | 磁盘 | 工程包约 18 MB；macOS 应用包约 68 MB；再留几十 MB 给 `.godot` 导入缓存 |
-| 网络 | 不需要。单机，无账号、无 Mongo、无 Jinteki 服务器 |
-| 其它 | 不需要 Java、Leiningen、Android SDK。鼠标即可，无手柄要求 |
+| 网络 | 离线 GDScript 模式不需要。完整 Clojure 模式需要本机 Jinteki（`http://127.0.0.1:1042`） |
+| 其它 | 离线模式不需要 Java。Clojure 模式需要 Java 21、Leiningen、Mongo，以及已经 `lein fetch` 的卡牌库 |
 
 三种打开方式：
 
@@ -28,11 +31,7 @@ godot --main-pack Jinteki.pck
 # 3) macOS：双击 Jinteki.app（若被拦截：xattr -cr Jinteki.app）
 ```
 
-重新导出需要本机已安装 **4.7.1 export templates**（含 `macos.zip`）。
-
-```bash
-godot --path .
-```
+本仓库里直接跑：`godot --path .`。重新导出需要本机已安装 **4.7.1 export templates**（含 `macos.zip`）。
 
 ## Godot 4 工程包（编辑器可载入）
 
@@ -71,11 +70,20 @@ Intel 和 Apple Silicon 通用 zip（未公证，Gatekeeper 会拦一次）：
 
 标题界面：
 
-- **对战强力 AI · Runner / Corp** — 对手用多步搜索 + 局面评估
-- **观看强力 AI 对战** — 双方都是强力 AI
-- **Hotseat** — 双方轮流点动作
+- **对战强力 AI · Runner / Corp** — 离线 GDScript 规则，对手用多步搜索
+- **观看强力 AI 对战** / **Hotseat** — 同样是离线教学引擎
+- **完整 Clojure 引擎 · Runner / Corp** — 连本机 Jinteki，规则走 2000+ 张牌的 JVM 引擎
+- **观看 Clojure 引擎** / **Clojure Hotseat** — 同一套 HTTP 桥
 
-右侧按钮是当前合法动作（点击、打出、安装、推进、打分、run、破冰……）。
+右侧按钮是当前合法动作。Clojure 模式的动作列表由服务器的 `actions` 字段给出。
+
+完整引擎启动：
+
+```bash
+./clojure-bridge/apply.sh /path/to/netrunner
+# 在 netrunner 目录：lein fetch && lein run
+# Godot 默认连 http://127.0.0.1:1042 ，可用环境变量 JINTEKI_URL 覆盖
+```
 
 ## 已实现
 
@@ -92,4 +100,5 @@ godot --headless --path . --import --quit
 godot --headless --path . -s res://tests/smoke.gd
 godot --headless --path . -s res://tests/rules.gd
 godot --headless --path . -s res://tests/ai_battle.gd
+godot --headless --path . -s res://tests/clojure_bridge.gd   # 无 Jinteki 时打印 SKIP
 ```

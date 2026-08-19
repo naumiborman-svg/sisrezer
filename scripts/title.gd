@@ -19,8 +19,8 @@ func _ready() -> void:
 	pad.custom_minimum_size = Vector2(0, 40)
 	box.add_child(pad)
 	box.add_child(_label("JINTEKI", 48, ACCENT))
-	box.add_child(_label("Android: Netrunner  ·  System Gateway beginner", 18, Color(0.75, 0.82, 0.88)))
-	box.add_child(_label("Godot port of github.com/mtgred/netrunner", 14, Color(0.5, 0.58, 0.64)))
+	box.add_child(_label("Android: Netrunner  ·  System Gateway beginner + full Clojure engine", 18, Color(0.75, 0.82, 0.88)))
+	box.add_child(_label("Godot UI  ·  github.com/mtgred/netrunner", 14, Color(0.5, 0.58, 0.64)))
 	var row := HBoxContainer.new()
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
@@ -33,7 +33,19 @@ func _ready() -> void:
 	box.add_child(row2)
 	row2.add_child(_btn("观看强力 AI 对战", func() -> void: _start("watch")))
 	row2.add_child(_btn("Hotseat", func() -> void: _start("hotseat")))
-	box.add_child(_label("System Gateway beginner  ·  6 AP  ·  对手带多步搜索", 14, Color(0.55, 0.62, 0.68)))
+	var row3 := HBoxContainer.new()
+	row3.alignment = BoxContainer.ALIGNMENT_CENTER
+	row3.add_theme_constant_override("separation", 16)
+	box.add_child(row3)
+	row3.add_child(_btn("完整 Clojure 引擎 · Runner", func() -> void: _start_clojure("runner")))
+	row3.add_child(_btn("完整 Clojure 引擎 · Corp", func() -> void: _start_clojure("corp")))
+	var row4 := HBoxContainer.new()
+	row4.alignment = BoxContainer.ALIGNMENT_CENTER
+	row4.add_theme_constant_override("separation", 16)
+	box.add_child(row4)
+	row4.add_child(_btn("观看 Clojure 引擎", func() -> void: _start_clojure("watch")))
+	row4.add_child(_btn("Clojure Hotseat", func() -> void: _start_clojure("hotseat")))
+	box.add_child(_label("上排：离线 GDScript 教学规则  ·  下排：连本机 Jinteki Clojure 引擎（:1042）", 14, Color(0.55, 0.62, 0.68)))
 
 
 func _label(text: String, size: int, color: Color) -> Label:
@@ -48,13 +60,21 @@ func _label(text: String, size: int, color: Color) -> Label:
 func _btn(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(220, 40)
+	b.custom_minimum_size = Vector2(260, 40)
 	b.pressed.connect(cb)
 	return b
 
 
 func _start(mode: String) -> void:
 	var packed := load("res://scenes/board.tscn") as PackedScene
+	var board := packed.instantiate()
+	board.set("mode", mode)
+	get_tree().root.add_child(board)
+	queue_free()
+
+
+func _start_clojure(mode: String) -> void:
+	var packed := load("res://scenes/clojure_board.tscn") as PackedScene
 	var board := packed.instantiate()
 	board.set("mode", mode)
 	get_tree().root.add_child(board)

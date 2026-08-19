@@ -8,7 +8,8 @@ func _initialize() -> void:
 		return
 	var title_ps := load("res://scenes/title.tscn") as PackedScene
 	var board_ps := load("res://scenes/board.tscn") as PackedScene
-	if title_ps == null or board_ps == null:
+	var clojure_ps := load("res://scenes/clojure_board.tscn") as PackedScene
+	if title_ps == null or board_ps == null or clojure_ps == null:
 		push_error("scenes failed to load")
 		quit(1)
 		return

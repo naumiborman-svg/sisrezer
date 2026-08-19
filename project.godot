@@ -4,7 +4,7 @@ config_version=5
 [application]
 
 config/name="Jinteki"
-config/description="Godot port of mtgred/netrunner (System Gateway beginner)"
+config/description="Godot UI for mtgred/netrunner: offline beginner rules plus Clojure engine client"
 config/version="1.0.0"
 run/main_scene="res://scenes/title.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")
