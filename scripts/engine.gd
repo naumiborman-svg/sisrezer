@@ -89,17 +89,20 @@ func clone() -> NREngine:
 func _rebind_run() -> void:
 	if run.is_empty():
 		return
-	if run.get("ice", {}) is Dictionary and (run.ice as Dictionary).has("uid"):
-		var ice := find_uid(int(run.ice.uid))
+	var ice_v: Variant = run.get("ice", null)
+	if ice_v is Dictionary and (ice_v as Dictionary).has("uid"):
+		var ice := find_uid(int((ice_v as Dictionary).uid))
 		if not ice.is_empty():
 			run.ice = ice
-	if run.get("current", {}) is Dictionary and (run.current as Dictionary).has("uid"):
-		var cur := find_uid(int(run.current.uid))
+	var cur_v: Variant = run.get("current", null)
+	if cur_v is Dictionary and (cur_v as Dictionary).has("uid"):
+		var cur := find_uid(int((cur_v as Dictionary).uid))
 		if not cur.is_empty():
 			run.current = cur
-	if run.has("queue") and run.queue is Array:
+	var queue_v: Variant = run.get("queue", null)
+	if queue_v is Array:
 		var nq: Array = []
-		for item: Variant in run.queue:
+		for item: Variant in queue_v:
 			if item is Dictionary and item.has("uid"):
 				var found := find_uid(int(item.uid))
 				if not found.is_empty():
