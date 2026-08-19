@@ -31,6 +31,18 @@ func _initialize() -> void:
 		push_error("keep lost state")
 		quit(1)
 		return
+	var gain := _find_label(after, "Gain")
+	if gain.is_empty():
+		gain = _find_command(after, "gain")
+	if gain.is_empty():
+		push_error("no Gain after keep (phase=%s actions=%s)" % [after.get("phase", ""), after.get("actions", [])])
+		quit(1)
+		return
+	after = await client.action(str(game["id"]), gain)
+	if int(after.get("runner", {}).get("credits", 0)) < 6:
+		push_error("gain did not add a credit")
+		quit(1)
+		return
 	var catalog: Dictionary = await client.catalog()
 	if (catalog.get("precons", []) as Array).is_empty():
 		push_error("catalog missing precons")
