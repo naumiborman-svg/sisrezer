@@ -10,6 +10,21 @@
 godot --path .
 ```
 
+## macOS 下载包
+
+Intel 和 Apple Silicon 通用 zip（未公证，Gatekeeper 会拦一次）：
+
+```bash
+# 本机有 Godot 4.7.1 导出模板时
+./scripts/export_macos.sh
+```
+
+在 Mac 上：
+
+1. 解压 `Jinteki-macos-universal.zip`
+2. 若提示无法打开：在终端执行 `xattr -cr Jinteki.app`，或右键 **打开**
+3. 双击 `Jinteki.app`
+
 标题界面：
 
 - **对战强力 AI · Runner / Corp** — 对手用多步搜索 + 局面评估
