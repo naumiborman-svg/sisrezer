@@ -11,6 +11,7 @@
    [game.core.turns :as turns]
    [game.utils :as utils]
    [jinteki.cards :as cards]
+   [jinteki.preconstructed :as precon]
    [web.utils :refer [response]]))
 
 (defonce games (atom {}))
@@ -83,7 +84,8 @@
       (assoc :advancement_requirement (or (:current-advancement-requirement c)
                                           (:advancementcost c)))
       (:agendapoints c) (assoc :agenda_points (:agendapoints c))
-      (some? (:rezzed c)) (assoc :rezzed (boolean (:rezzed c)))
+      (some? (:rezzed c)) (assoc :rezzed (boolean (:rezzed c))
+                                 :rez (boolean (:rezzed c)))
       (or (:current-strength c) (:strength c))
       (assoc :strength (or (:current-strength c) (:strength c)))
       (:playable c) (assoc :playable true)
@@ -374,42 +376,179 @@
         (pa/process-action "choice" state side {:choice {:uuid (str (:uuid ch))}})
         (recur (inc guard))))))
 
-(defn- begin-game! [agenda-goal]
-  (let [corp-deck (deck-from-codes beginner-corp-id beginner-corp-cards)
-        runner-deck (deck-from-codes beginner-runner-id beginner-runner-cards)
-        gid (str (java.util.UUID/randomUUID))
-        state (set-up/init-game
-               {:gameid gid
-                :format :system-gateway
-                :api-access true
-                :players [{:side "Corp"
-                           :user {:username "Corp"}
-                           :deck corp-deck}
-                          {:side "Runner"
-                           :user {:username "Runner"}
-                           :deck runner-deck}]})]
-    (click-keep state :corp)
-    (click-keep state :runner)
-    (when (or (:end-turn @state) (zero? (or (:turn @state) 0)))
-      (turns/start-turn state :corp nil))
-    (swap! state assoc-in [:corp :agenda-point-req] agenda-goal)
-    (swap! state assoc-in [:runner :agenda-point-req] agenda-goal)
-    (swap! games assoc gid state)
-    (game-view gid state)))
+(defn- card-by-title [title]
+  (when (and title (not (str/blank? (str title))))
+    (or (get @cards/all-cards (str title))
+        (some #(when (= (str title) (str (:title %))) %) (utils/server-cards)))))
+
+(defn- deck-from-precon [precon-deck]
+  (let [ident (or (card-by-code (get-in precon-deck [:identity :code]))
+                  (card-by-title (get-in precon-deck [:identity :title])))
+        entries (vec (for [{:keys [qty card]} (:cards precon-deck)
+                           :let [c (if (map? card)
+                                     (or (card-by-code (:code card))
+                                         (card-by-title (:title card)))
+                                     (or (card-by-code card)
+                                         (card-by-title card)))]
+                           :when c]
+                       {:qty qty :card c}))]
+    (when-not ident
+      (throw (ex-info (str "Missing identity in precon " (:name precon-deck))
+                      {:precon (:name precon-deck)})))
+    (when (empty? entries)
+      (throw (ex-info (str "Precon resolved to zero cards: " (:name precon-deck))
+                      {:precon (:name precon-deck)})))
+    {:identity ident
+     :cards entries}))
+
+(defn- deck-from-qty-map [identity-code qty-map]
+  (deck-from-codes (str identity-code)
+                   (into {} (for [[k v] qty-map]
+                              [(str (if (keyword? k) (name k) k)) (int v)]))))
+
+(defn- format-kw [precon-deck]
+  (let [f (:format precon-deck)]
+    (cond
+      (keyword? f) f
+      (= f "system-gateway") :system-gateway
+      :else :eternal)))
+
+(defn- tr-en [v]
+  (cond
+    (sequential? v) (str (last v))
+    (string? v) v
+    :else (str v)))
+
+(defn- as-kw [v]
+  (when (and v (not (str/blank? (str v))))
+    (keyword (str/replace (str v) #"^:" ""))))
+
+(defn- as-int [v fallback]
+  (cond
+    (number? v) (int v)
+    (and (string? v) (re-matches #"-?\d+" v)) (Integer/parseInt v)
+    :else fallback))
+
+(defn- side-name [v]
+  (let [s (-> (str (or v "runner"))
+              (str/replace #"^:" "")
+              str/lower-case)]
+    (if (= s "corp") "corp" "runner")))
+
+(defn- lookup-matchup [key]
+  (try
+    (precon/matchup-by-key key)
+    (catch Exception _
+      (precon/matchup-by-key :beginner))))
+
+(defn- slim-precon-deck [precon-deck]
+  (let [ident (:identity precon-deck)
+        resolved (or (card-by-code (:code ident))
+                     (card-by-title (:title ident)))]
+    {:name (:name precon-deck)
+     :identity (or (:code ident) (:code resolved) "")
+     :identity_title (or (:title ident) (:title resolved) "")
+     :faction (or (:faction resolved) "")
+     :side (str/lower-case (or (:side ident) (:side resolved) ""))
+     :format (:format precon-deck)
+     :card_count (reduce + 0 (map :qty (:cards precon-deck)))}))
+
+(def matchup-keys
+  (into [:beginner :intermediate] (sort precon/all-matchups)))
+
+(defn- catalog-matchup [key]
+  (let [mu (lookup-matchup key)]
+    {:key (name key)
+     :label (tr-en (:tr-tag mu))
+     :description (tr-en (:tr-desc mu))
+     :underline (tr-en (:tr-underline mu))
+     :corp (slim-precon-deck (:corp mu))
+     :runner (slim-precon-deck (:runner mu))}))
+
+(defn- random-matchup-key []
+  (nth matchup-keys (rand-int (count matchup-keys))))
+
+(defn- begin-game!
+  ([agenda-goal] (begin-game! agenda-goal {}))
+  ([agenda-goal opts]
+   (let [mode (or (as-kw (:mode opts)) :starter)
+         requested (or (:matchup opts) (:matchup_key opts))
+         matchup-key (or (as-kw requested)
+                         (when (#{:quick :precon} mode) (random-matchup-key))
+                         (when (#{:starter :beginner} mode) :beginner)
+                         (when (= mode :intermediate) :intermediate)
+                         :beginner)
+         mu (lookup-matchup matchup-key)
+         corp-deck (cond
+                     (:corp_identity opts)
+                     (deck-from-qty-map (:corp_identity opts) (or (:corp_cards opts) {}))
+                     :else (deck-from-precon (:corp mu)))
+         runner-deck (cond
+                       (:runner_identity opts)
+                       (deck-from-qty-map (:runner_identity opts) (or (:runner_cards opts) {}))
+                       :else (deck-from-precon (:runner mu)))
+         fmt (format-kw (:corp mu))
+         gid (str (java.util.UUID/randomUUID))
+         state (set-up/init-game
+                {:gameid gid
+                 :format fmt
+                 :api-access true
+                 :players [{:side "Corp"
+                            :user {:username "Corp"}
+                            :deck corp-deck}
+                           {:side "Runner"
+                            :user {:username "Runner"}
+                            :deck runner-deck}]})]
+     (click-keep state :corp)
+     (click-keep state :runner)
+     (when (or (:end-turn @state) (zero? (or (:turn @state) 0)))
+       (turns/start-turn state :corp nil))
+     (swap! state assoc-in [:corp :agenda-point-req] agenda-goal)
+     (swap! state assoc-in [:runner :agenda-point-req] agenda-goal)
+     (swap! games assoc gid state)
+     (assoc (game-view gid state)
+            :matchup (name matchup-key)
+            :matchup_label (tr-en (:tr-tag mu))
+            :viewing (side-name (:side opts))))))
 
 (defn status-handler [_req]
   (response 200
             {:ok true
              :engine "mtgred/netrunner"
+             :source "https://github.com/mtgred/netrunner"
              :cards (count @cards/all-cards)
+             :matchups (count matchup-keys)
              :games (count @games)
              :bridge "godot"}))
+
+(defn catalog-handler [_req]
+  (response 200
+            {:ok true
+             :engine "mtgred/netrunner"
+             :cards (count @cards/all-cards)
+             :matchups (mapv catalog-matchup matchup-keys)
+             :preview (catalog-matchup (random-matchup-key))}))
+
+(defn preview-handler [_req]
+  (response 200
+            (let [key (random-matchup-key)
+                  item (catalog-matchup key)
+                  player-runner? (< (rand) 0.5)]
+              {:ok true
+               :matchup (:key item)
+               :side (if player-runner? "runner" "corp")
+               :player (if player-runner? (:runner item) (:corp item))
+               :ai (if player-runner? (:corp item) (:runner item))})))
 
 (defn new-handler [req]
   (try
     (let [body (or (:body req) {})
-          goal (or (:agenda_goal body) (:agenda-goal body) 6)]
-      (response 200 (begin-game! (int goal))))
+          params (or (:params req) {})
+          opts (merge params body)
+          mode (or (as-kw (:mode opts)) :starter)
+          default-goal (if (#{:starter :beginner} mode) 6 7)
+          goal (as-int (or (:agenda_goal opts) (:agenda-goal opts)) default-goal)]
+      (response 200 (begin-game! goal (assoc opts :mode (name mode)))))
     (catch Exception e
       (response 500 {:ok false :error (.getMessage e)}))))
 

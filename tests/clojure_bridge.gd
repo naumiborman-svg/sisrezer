@@ -62,8 +62,37 @@ func _initialize() -> void:
 		push_error("start-turn should pass priority to runner")
 		quit(1)
 		return
-	print("CLOJURE_BRIDGE_OK cards=%s credits=%s steps=%s turn=%s log=%s" % [
-		cards_n, credits, steps, cur.get("turn", 0), (cur.get("log", []) as Array).size()
+	var catalog: Dictionary = await client.catalog()
+	var matchups: Array = catalog.get("matchups", [])
+	if matchups.is_empty():
+		push_error("catalog missing matchups")
+		quit(1)
+		return
+	var keys: PackedStringArray = PackedStringArray()
+	for item: Variant in matchups:
+		if item is Dictionary:
+			keys.append(str(item.get("key", "")))
+	if not keys.has("beginner") or not keys.has("worlds-2012-a"):
+		push_error("catalog missing official matchups: %s" % ", ".join(keys))
+		quit(1)
+		return
+	var beginner: Dictionary = await client.new_game({"mode": "beginner", "side": "runner"})
+	if int(beginner.get("corp", {}).get("agenda_point_req", 0)) != 6:
+		push_error("beginner agenda goal should be 6, got %s" % beginner.get("corp", {}).get("agenda_point_req", beginner.get("error")))
+		quit(1)
+		return
+	var worlds: Dictionary = await client.new_game({"mode": "precon", "matchup": "worlds-2012-a", "side": "runner"})
+	if not bool(worlds.get("ok", false)) or str(worlds.get("id", "")) == "":
+		push_error("worlds matchup failed: %s" % worlds.get("error", client.last_error))
+		quit(1)
+		return
+	if str(worlds.get("matchup", "")) != "worlds-2012-a":
+		push_error("expected worlds-2012-a, got %s" % worlds.get("matchup"))
+		quit(1)
+		return
+	print("CLOJURE_BRIDGE_OK cards=%s credits=%s steps=%s turn=%s log=%s matchups=%s worlds=%s" % [
+		cards_n, credits, steps, cur.get("turn", 0), (cur.get("log", []) as Array).size(),
+		matchups.size(), worlds.get("matchup_label", ""),
 	])
 	quit(0)
 

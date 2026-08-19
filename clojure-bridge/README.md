@@ -17,12 +17,14 @@ Godot 不重写 2000 张牌。本目录把 [mtgred/netrunner](https://github.com
 
 | 方法 | 路径 | 作用 |
 | --- | --- | --- |
-| GET | `/godot/status` | 引擎是否活着、卡牌数量 |
-| GET/POST | `/godot/new` | 开一局 System Gateway 入门套牌（自动 Keep + Corp 回合），默认 6 AP |
+| GET | `/godot/status` | 引擎、卡牌数量、官方对阵数量 |
+| GET | `/godot/catalog` | `jinteki.preconstructed` 全部对阵（Gateway beginner/intermediate + Worlds + Classique） |
+| GET | `/godot/preview` | 随机一对官方预组，带 `side` |
+| GET/POST | `/godot/new` | 开局（自动 Keep + Corp 回合）。body：`mode` starter/beginner/intermediate/quick/precon，`matchup`，`side`，`agenda_goal` |
 | GET | `/godot/state?id=` | 精简局面 |
 | POST | `/godot/action` | `{"id","command","side","args"}`，command 与 `process-action` 相同 |
 
-`/godot/new` 的 body 可带 `{"agenda_goal": 6}`。
+`/godot/new` 默认 System Gateway beginner，6 AP。`mode=quick` 随机抽官方对阵，7 AP。卡组来自 [mtgred/netrunner](https://github.com/mtgred/netrunner) 的 `src/cljc/jinteki/preconstructed.cljc`。
 
 动作例子：
 

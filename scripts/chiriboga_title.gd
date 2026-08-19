@@ -6,12 +6,16 @@ const DIM := Color(0.35, 0.65, 0.35)
 const MUTED := Color(0.28, 0.48, 0.28)
 
 var client: ChiribogaClient
+var jinteki: ClojureClient
 var catalog: Dictionary = {}
+var jinteki_catalog: Dictionary = {}
 var preview: Dictionary = {}
 var settings: Dictionary = {}
 var _left: VBoxContainer
 var _preview_box: VBoxContainer
 var _host_ok := false
+var _jinteki_ok := false
+var _jinteki_cards := 0
 var _threat := 1
 
 
@@ -41,8 +45,12 @@ func _ready() -> void:
 		_add_scanlines()
 	client = ChiribogaClient.new()
 	add_child(client)
+	jinteki = ClojureClient.new()
+	add_child(jinteki)
 	if not client.is_node_ready():
 		await client.ready
+	if not jinteki.is_node_ready():
+		await jinteki.ready
 	_load_catalog()
 
 
@@ -107,6 +115,10 @@ func _show_main() -> void:
 	_left.add_child(_menu_btn("TUTORIAL", func() -> void: _show_tutorial()))
 	_left.add_child(_menu_btn("ACHIEVEMENTS [%s%%]" % ChiribogaSave.percent(), func() -> void: _show_achievements()))
 	_left.add_child(_menu_btn("SETTINGS", func() -> void: _show_settings()))
+	if _jinteki_ok:
+		_left.add_child(_label("RULES  mtgred/netrunner  ·  %s cards" % _jinteki_cards, 12, DIM))
+	else:
+		_left.add_child(_label("RULES  Chiriboga JS  ·  start lein run for 2065-card engine", 12, MUTED))
 	_paint_preview()
 
 
@@ -116,7 +128,7 @@ func _paint_preview() -> void:
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_preview_box.add_child(title)
 	if preview.is_empty():
-		_preview_box.add_child(_label("Connecting Chiriboga host :1043 …" if not _host_ok else "Rerolling pair…", 14, DIM))
+		_preview_box.add_child(_label("Connecting engines…" if not (_host_ok or _jinteki_ok) else "Rerolling pair…", 14, DIM))
 		return
 	var player: Dictionary = preview.get("player", {})
 	var ai: Dictionary = preview.get("ai", {})
@@ -151,21 +163,32 @@ func _portrait(who: String, deck: Dictionary) -> VBoxContainer:
 
 
 func _load_catalog() -> void:
+	var jt: Dictionary = await jinteki.status()
+	_jinteki_ok = bool(jt.get("ok", false))
+	_jinteki_cards = int(jt.get("cards", 0))
 	var st: Dictionary = await client.status()
 	_host_ok = bool(st.get("ok", false))
-	if not _host_ok:
-		preview = {}
-		_paint_preview()
-		return
-	catalog = await client.catalog()
-	if catalog.has("preview"):
-		var p: Variant = catalog["preview"]
-		if p is Dictionary:
-			preview = p
-	_paint_preview()
+	if _jinteki_ok:
+		jinteki_catalog = await jinteki.catalog()
+		var jp: Dictionary = await jinteki.preview()
+		if bool(jp.get("ok", false)):
+			preview = jp
+	if preview.is_empty() and _host_ok:
+		catalog = await client.catalog()
+		if catalog.has("preview"):
+			var p: Variant = catalog["preview"]
+			if p is Dictionary:
+				preview = p
+	_show_main()
 
 
 func _reroll() -> void:
+	if _jinteki_ok:
+		var jp: Dictionary = await jinteki.preview()
+		if bool(jp.get("ok", false)):
+			preview = jp
+			_paint_preview()
+			return
 	var p: Dictionary = await client.preview()
 	if bool(p.get("ok", false)):
 		preview = p
@@ -173,6 +196,13 @@ func _reroll() -> void:
 
 
 func _start_quick() -> void:
+	if _jinteki_ok:
+		var payload := {"engine": "jinteki", "mode": "quick", "agenda_goal": 7}
+		if not preview.is_empty():
+			payload["matchup"] = str(preview.get("matchup", ""))
+			payload["side"] = str(preview.get("side", "runner"))
+		_start(payload)
+		return
 	var payload := {"mode": "quick"}
 	if not preview.is_empty():
 		payload["player_deck"] = str(preview.get("player", {}).get("name", ""))
@@ -184,6 +214,29 @@ func _start_quick() -> void:
 func _show_custom() -> void:
 	_clear(_left)
 	_left.add_child(_label("CUSTOM GAME", 22, GREEN))
+	if _jinteki_ok:
+		_left.add_child(_label("mtgred/netrunner preconstructed matchups", 13, DIM))
+		var you_side := OptionButton.new()
+		you_side.add_item("YOU  ·  RUNNER")
+		you_side.set_item_metadata(0, "runner")
+		you_side.add_item("YOU  ·  CORP")
+		you_side.set_item_metadata(1, "corp")
+		_left.add_child(you_side)
+		var pick := OptionButton.new()
+		for item: Variant in jinteki_catalog.get("matchups", []):
+			if item is Dictionary:
+				pick.add_item(str(item.get("label", item.get("key", "?"))))
+				pick.set_item_metadata(pick.item_count - 1, item)
+		_left.add_child(pick)
+		_left.add_child(_menu_btn("LAUNCH", func() -> void:
+			var mu: Variant = pick.get_selected_metadata()
+			var payload := {"engine": "jinteki", "mode": "precon", "side": str(you_side.get_selected_metadata())}
+			if mu is Dictionary:
+				payload["matchup"] = str(mu.get("key", ""))
+			_start(payload)
+		))
+		_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
+		return
 	var runners := _precons("runner", true)
 	var corps := _precons("corp", true)
 	_left.add_child(_label("YOUR DECK", 13, MUTED))
@@ -285,7 +338,8 @@ func _show_settings() -> void:
 	row.add_child(_label("  LENGTH  %s  " % settings.get("gauntlet_length", 4), 16, GREEN))
 	row.add_child(plus)
 	_left.add_child(row)
-	_left.add_child(_label("Engine host  %s" % client.base_url, 12, DIM))
+	_left.add_child(_label("Engine  mtgred/netrunner :1042  %s" % ("ON  %s cards" % _jinteki_cards if _jinteki_ok else "OFF"), 12, DIM))
+	_left.add_child(_label("Engine  Chiriboga JS :1043  %s" % ("ON" if _host_ok else "OFF"), 12, DIM))
 	_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
 
 
@@ -300,9 +354,8 @@ func _show_credits() -> void:
 	box.add_child(_label("CREDITS", 22, GREEN))
 	box.add_child(_label("This Netrunner Solo Mode extension for the Chiriboga engine is developed by DrBo6. It adds a more refined interface and game modes.", 13, DIM, true))
 	box.add_child(_label("Chiriboga is a Netrunner engine developed by bobtheuberfish. It implements Android: Netrunner gameplay with an AI opponent.", 13, DIM, true))
-	box.add_child(_label("Godot replica drives the original JS engine headless (text mode) over HTTP :1043.", 13, DIM, true))
-	box.add_child(_label("Card art & symbols are property of Null Signal Games, used under CC BY-ND 4.0. Fan implementation, not endorsed by NSG / FFG / WotC.", 13, DIM, true))
-	box.add_child(_label("GPL-3.0  ·  chiriboga.cronbach.com  ·  github.com/bobtheuberfish/chiriboga  ·  github.com/drbo6/chiriboga", 12, MUTED, true))
+	box.add_child(_label("Full card rules come from mtgred/netrunner (Clojure, 2000+ cards) when lein run is up on :1042. Tutorials still use the Chiriboga JS engine on :1043.", 13, DIM, true))
+	box.add_child(_label("GPL-3.0  ·  chiriboga.cronbach.com  ·  github.com/mtgred/netrunner  ·  github.com/bobtheuberfish/chiriboga", 12, MUTED, true))
 	_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
 
 
@@ -393,6 +446,19 @@ func _clear(node: Node) -> void:
 
 
 func _start(payload: Dictionary) -> void:
+	var mode := str(payload.get("mode", ""))
+	var mentor := int(payload.get("mentor", -1))
+	if not payload.has("engine"):
+		if mode == "tutorial" and mentor >= 0 and mentor < 6:
+			payload["engine"] = "chiriboga"
+		elif _jinteki_ok and mode != "gauntlet":
+			payload["engine"] = "jinteki"
+		else:
+			payload["engine"] = "chiriboga"
+	if str(payload.get("engine", "")) == "jinteki" and mode == "tutorial":
+		payload["mode"] = "beginner"
+		payload["agenda_goal"] = 6
+		payload["side"] = "corp" if mentor == 7 else "runner"
 	var packed := load("res://scenes/chiriboga_board.tscn") as PackedScene
 	var board := packed.instantiate()
 	board.set("payload", payload)

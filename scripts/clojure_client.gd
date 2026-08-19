@@ -10,7 +10,7 @@ func _ready() -> void:
 	if OS.get_environment("JINTEKI_URL") != "":
 		base_url = OS.get_environment("JINTEKI_URL").rstrip("/")
 	_http = HTTPRequest.new()
-	_http.timeout = 20.0
+	_http.timeout = 45.0
 	_http.use_threads = true
 	add_child(_http)
 
@@ -19,8 +19,23 @@ func status() -> Dictionary:
 	return await _req(HTTPClient.METHOD_GET, "/godot/status")
 
 
-func new_game(agenda_goal: int = 6) -> Dictionary:
-	return await _req(HTTPClient.METHOD_POST, "/godot/new", {"agenda_goal": agenda_goal})
+func catalog() -> Dictionary:
+	return await _req(HTTPClient.METHOD_GET, "/godot/catalog")
+
+
+func preview() -> Dictionary:
+	return await _req(HTTPClient.METHOD_GET, "/godot/preview")
+
+
+func new_game(payload: Variant = 6) -> Dictionary:
+	var body: Dictionary
+	if payload is int:
+		body = {"agenda_goal": payload}
+	elif payload is Dictionary:
+		body = payload
+	else:
+		body = {"agenda_goal": 6}
+	return await _req(HTTPClient.METHOD_POST, "/godot/new", body)
 
 
 func get_state(id: String) -> Dictionary:

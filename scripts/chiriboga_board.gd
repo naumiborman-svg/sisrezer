@@ -5,7 +5,7 @@ const GREEN := Color(0.2, 1.0, 0.2)
 const DIM := Color(0.45, 0.7, 0.45)
 
 var payload: Dictionary = {"mode": "starter", "side": "runner", "ap": 6}
-var client: ChiribogaClient
+var client: Node
 var game_id := ""
 var state: Dictionary = {}
 var log_box: RichTextLabel
@@ -15,6 +15,8 @@ var status: Label
 var _busy := false
 var _notice := ""
 var _ai_watch := false
+var _jinteki := false
+var _human := "runner"
 
 
 func _fill(node: Control, pad := Vector4.ZERO) -> void:
@@ -47,23 +49,38 @@ func _ready() -> void:
 		overlay.material = mat
 		add_child(overlay)
 	_build()
-	client = ChiribogaClient.new()
+	_jinteki = str(payload.get("engine", "")) == "jinteki"
+	_human = str(payload.get("side", "runner"))
+	if _jinteki:
+		client = ClojureClient.new()
+	else:
+		client = ChiribogaClient.new()
 	add_child(client)
 	if not client.is_node_ready():
 		await client.ready
-	_notice = "Connecting Chiriboga engine at %s …" % client.base_url
+	_notice = "Connecting %s at %s …" % ["mtgred/netrunner" if _jinteki else "Chiriboga", str(client.get("base_url"))]
 	_refresh()
-	var created := await client.new_game(payload)
+	var created: Dictionary
+	if _jinteki:
+		created = await (client as ClojureClient).new_game(payload)
+	else:
+		created = await (client as ChiribogaClient).new_game(payload)
 	if not bool(created.get("ok", false)) or str(created.get("id", "")) == "":
-		_notice = "Chiriboga host unavailable: %s\nStart: ./chiriboga-bridge/start.sh" % created.get("error", client.last_error)
+		_notice = "%s unavailable: %s" % [
+			"mtgred/netrunner (lein run :1042)" if _jinteki else "Chiriboga host (./chiriboga-bridge/start.sh)",
+			created.get("error", str(client.get("last_error"))),
+		]
 		_refresh()
 		return
 	game_id = str(created["id"])
-	state = created
+	state = _normalize(created)
 	_notice = ""
 	_refresh()
-	_maybe_autocommit()
-	_maybe_watch()
+	if _jinteki:
+		_maybe_ai()
+	else:
+		_maybe_autocommit()
+		_maybe_watch()
 
 
 func _build() -> void:
@@ -148,7 +165,9 @@ func _status_text() -> String:
 	var g: Variant = state.get("gauntlet", null)
 	if g is Dictionary:
 		extra = "    Gauntlet %s/%s  %s" % [g.get("defeated", 0), g.get("length", 0), g.get("opponent", "")]
-	return "Chiriboga  ·  %s  ·  %s    Corp %dc / %dcl / %dAP    Runner %dc / %dcl / %dAP  goal %s%s" % [
+	var engine := "mtgred/netrunner" if _jinteki else "Chiriboga"
+	return "%s  ·  %s  ·  %s    Corp %dc / %dcl / %dAP    Runner %dc / %dcl / %dAP  goal %s%s" % [
+		engine,
 		state.get("phase", ""),
 		str(state.get("active", "")).capitalize(),
 		int(corp.get("credits", 0)), int(corp.get("clicks", 0)), int(corp.get("agenda_points", 0)),
@@ -189,7 +208,7 @@ func _paint_actions() -> void:
 		w.text = "AI faceoff…"
 		action_box.add_child(w)
 		return
-	for item: Variant in state.get("actions", []):
+	for item: Variant in _visible_actions():
 		if item is Dictionary:
 			var b := Button.new()
 			b.text = str(item.get("label", item.get("command", "?")))
@@ -199,23 +218,72 @@ func _paint_actions() -> void:
 			action_box.add_child(b)
 
 
+func _visible_actions() -> Array:
+	var acts: Array = state.get("actions", [])
+	if not _jinteki:
+		return acts
+	var actor := ClojureAi.actor(state)
+	if actor != _human:
+		return []
+	return acts
+
+
+func _normalize(raw: Dictionary) -> Dictionary:
+	var out: Dictionary = raw.duplicate(true)
+	var servers: Variant = out.get("servers", {})
+	if servers is Dictionary:
+		for key in ["hq", "rd", "archives"]:
+			var sv: Variant = servers.get(key, {})
+			if sv is Dictionary and sv.has("ices") and not sv.has("ice"):
+				sv["ice"] = sv["ices"]
+		for remote: Variant in servers.get("remotes", []):
+			if remote is Dictionary and remote.has("ices") and not remote.has("ice"):
+				remote["ice"] = remote["ices"]
+	if str(out.get("engine", "")) == "mtgred/netrunner":
+		out["phase"] = "Turn %s" % out.get("turn", 0)
+		var corp: Dictionary = out.get("corp", {})
+		out["agenda_goal"] = corp.get("agenda_point_req", out.get("agenda_goal", 7))
+	return out
+
+
 func _do(act: Dictionary) -> void:
 	if _busy or game_id == "":
 		return
 	_busy = true
-	var next_state := await client.action(game_id, act)
+	var next_state: Dictionary
+	if _jinteki:
+		next_state = await (client as ClojureClient).action(game_id, act)
+	else:
+		next_state = await (client as ChiribogaClient).action(game_id, act)
 	_busy = false
 	if next_state.has("actions") or bool(next_state.get("ok", false)):
-		state = next_state
+		state = _normalize(next_state)
 	else:
 		_notice = str(next_state.get("error", "action failed"))
 	_refresh()
-	_maybe_autocommit()
-	_maybe_watch()
+	if _jinteki:
+		_maybe_ai()
+	else:
+		_maybe_autocommit()
+		_maybe_watch()
+
+
+func _maybe_ai() -> void:
+	if not _jinteki or _busy or game_id == "" or str(state.get("winner", "")) != "":
+		return
+	var actor := ClojureAi.actor(state)
+	if actor == _human:
+		return
+	var act := ClojureAi.pick(state, actor)
+	if act.is_empty():
+		return
+	await get_tree().create_timer(0.2).timeout
+	if not _busy:
+		_do(act)
 
 
 func _maybe_autocommit() -> void:
-	if _busy or _ai_watch or game_id == "":
+	if _busy or _ai_watch or _jinteki or game_id == "":
 		return
 	if str(state.get("phase", "")) == "Tutorial":
 		return
@@ -294,18 +362,23 @@ func _server_panel(name: String, server: Dictionary) -> VBoxContainer:
 	box.add_child(title)
 	var ices: Array = server.get("ice", [])
 	var content: Array = server.get("content", [])
+	var corp_view := str(state.get("viewing", "")) == "corp"
 	for card: Variant in ices:
 		if card is Dictionary:
-			box.add_child(_mini(card, bool(card.get("rez", false)) or str(state.get("viewing", "")) == "corp"))
+			box.add_child(_mini(card, _face_up(card, corp_view)))
 	for card: Variant in content:
 		if card is Dictionary:
-			box.add_child(_mini(card, bool(card.get("faceUp", false)) or str(state.get("viewing", "")) == "corp"))
+			box.add_child(_mini(card, _face_up(card, corp_view)))
 	if ices.is_empty() and content.is_empty():
 		var empty := Label.new()
 		empty.text = "—"
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		box.add_child(empty)
 	return box
+
+
+func _face_up(card: Dictionary, corp_view: bool) -> bool:
+	return corp_view or bool(card.get("rez", false)) or bool(card.get("rezzed", false)) or bool(card.get("faceUp", false)) or bool(card.get("seen", false))
 
 
 func _card_row(cards: Array, face: bool) -> HBoxContainer:
@@ -318,7 +391,7 @@ func _card_row(cards: Array, face: bool) -> HBoxContainer:
 
 func _mini(card: Dictionary, face: bool) -> Control:
 	var wrap := VBoxContainer.new()
-	var code := str(card.get("setNumber", ""))
+	var code := str(card.get("setNumber", card.get("code", "")))
 	if code.length() > 2:
 		code = code
 	var path := "res://assets/cards/%s.png" % code

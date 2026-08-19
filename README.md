@@ -1,15 +1,16 @@
 # Chiriboga（Godot 复刻）
 
-[chiriboga.cronbach.com](https://chiriboga.cronbach.com) 的 Godot 4.7 客户端。规则权威是 **Chiriboga JS 引擎**（bobtheuberfish + DrBo6 Solo Mode），Godot 只做 CRT 菜单和桌面。
+[chiriboga.cronbach.com](https://chiriboga.cronbach.com) 的 Godot 4.7 客户端。菜单和教程对齐原站；**完整卡牌规则**在 [mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Clojure 引擎上跑（`lein run` :1042）。Tutorial 1–6 和 Gauntlet 仍用 Chiriboga JS（:1043）。
 
 启动：
 
 ```bash
+./clojure-bridge/apply.sh /path/to/mtgred-netrunner   # 然后在该目录 lein run → :1042
 ./chiriboga-bridge/start.sh    # Node + jsdom，默认 http://127.0.0.1:1043
 godot --path .
 ```
 
-标题菜单对齐原站：QUICK GAME、CUSTOM GAME、GAUNTLET、TUTORIAL 1–8、ACHIEVEMENTS、SETTINGS、CREDITS。卡组来自 `chiriboga-engine/precons/`。
+标题菜单对齐原站：QUICK GAME、CUSTOM GAME、GAUNTLET、TUTORIAL 1–8、ACHIEVEMENTS、SETTINGS、CREDITS。Jinteki 活着时 Quick/Custom/教程 7–8 用官方预组（`jinteki.preconstructed`，2065 张牌）；其余模式用 `chiriboga-engine/precons/`。
 
 引擎 GPL-3.0，源码在 `chiriboga-engine/`。卡图为 NSG CC BY-ND。
 
@@ -23,6 +24,8 @@ godot --path .
 2. **完整 Clojure 引擎**：本机跑 Jinteki（`lein run`，默认 `http://127.0.0.1:1042`）。Godot 通过 `/godot/*` JSON 桥把每一条动作交给 JVM 上的 `process-action`。卡牌效果以 Clojure 源码为准。
 
 桥接补丁在 `clojure-bridge/`，用 `./clojure-bridge/apply.sh` 装进 mtgred/netrunner 源码树后重启服务器。
+
+Quick / Custom / Tutorial 7–8 在 Jinteki 活着时走 **mtgred/netrunner**（2065 张牌、官方预组对阵）。Tutorial 1–6 和 Gauntlet 仍用 Chiriboga JS。
 
 ## 运行要求
 

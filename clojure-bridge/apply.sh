@@ -31,11 +31,30 @@ if '"/godot"' not in text:
      ["/godot"
       ["/status" {:get #'godot-bridge/status-handler}]
       ["/new" {:get #'godot-bridge/new-handler :post #'godot-bridge/new-handler}]
+      ["/catalog" {:get #'godot-bridge/catalog-handler}]
+      ["/preview" {:get #'godot-bridge/preview-handler}]
       ["/state" {:get #'godot-bridge/state-handler}]
       ["/action" {:post #'godot-bridge/action-handler}]]]'''
     if needle not in text:
         raise SystemExit("could not patch routes in api.clj")
     text = text.replace(needle, insert, 1)
+    changed = True
+elif '"/catalog"' not in text or "godot-bridge/catalog-handler" not in text:
+    old = '''     ["/godot"
+      ["/status" {:get #'godot-bridge/status-handler}]
+      ["/new" {:get #'godot-bridge/new-handler :post #'godot-bridge/new-handler}]
+      ["/state" {:get #'godot-bridge/state-handler}]
+      ["/action" {:post #'godot-bridge/action-handler}]]]'''
+    new = '''     ["/godot"
+      ["/status" {:get #'godot-bridge/status-handler}]
+      ["/new" {:get #'godot-bridge/new-handler :post #'godot-bridge/new-handler}]
+      ["/catalog" {:get #'godot-bridge/catalog-handler}]
+      ["/preview" {:get #'godot-bridge/preview-handler}]
+      ["/state" {:get #'godot-bridge/state-handler}]
+      ["/action" {:post #'godot-bridge/action-handler}]]]'''
+    if old not in text:
+        raise SystemExit("could not patch catalog routes in api.clj")
+    text = text.replace(old, new, 1)
     changed = True
 if changed:
     path.write_text(text)
