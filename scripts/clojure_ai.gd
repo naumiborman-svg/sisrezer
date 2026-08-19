@@ -6,6 +6,9 @@ static func actor(state: Dictionary) -> String:
 	var prompt: Variant = state.get("prompt", null)
 	if prompt is Dictionary and str(prompt.get("side", "")) != "":
 		return str(prompt["side"])
+	for item: Variant in state.get("actions", []):
+		if item is Dictionary and str(item.get("command", "")) == "start-turn":
+			return str(item.get("side", state.get("active", "corp")))
 	return str(state.get("active", "corp"))
 
 
@@ -64,7 +67,8 @@ static func _score(state: Dictionary, act: Dictionary, side: String) -> int:
 				return 95
 			return 60
 		"rez":
-			return 75
+			var clicks_left: int = int((corp if side == "corp" else runner).get("clicks", 0))
+			return 25 if clicks_left == 0 else 75
 		"advance":
 			return 85
 		"credit":
@@ -82,7 +86,8 @@ static func _score(state: Dictionary, act: Dictionary, side: String) -> int:
 		"start-turn":
 			return 110
 		"end-turn":
-			return 8
+			var clicks_now: int = int((corp if side == "corp" else runner).get("clicks", 0))
+			return 130 if clicks_now == 0 else 8
 		"remove-tag":
 			return 65
 		"ability":

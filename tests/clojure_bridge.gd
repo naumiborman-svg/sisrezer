@@ -54,6 +54,14 @@ func _initialize() -> void:
 		push_error("loop lost game state")
 		quit(1)
 		return
+	var start_state := {
+		"active": "corp",
+		"actions": [{"command": "start-turn", "side": "runner", "label": "Start Runner turn"}],
+	}
+	if ClojureAi.actor(start_state) != "runner":
+		push_error("start-turn should pass priority to runner")
+		quit(1)
+		return
 	print("CLOJURE_BRIDGE_OK cards=%s credits=%s steps=%s turn=%s log=%s" % [
 		cards_n, credits, steps, cur.get("turn", 0), (cur.get("log", []) as Array).size()
 	])

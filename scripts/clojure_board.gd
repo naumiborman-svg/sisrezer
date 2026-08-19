@@ -11,6 +11,7 @@ var table: Control
 var status: Label
 var _busy := false
 var _notice := ""
+var _ai_steps := 0
 
 
 func _ready() -> void:
@@ -170,6 +171,7 @@ func _paint_actions() -> void:
 func _do(act: Dictionary) -> void:
 	if _busy or game_id == "" or _ai_to_move():
 		return
+	_ai_steps = 0
 	_busy = true
 	var next_state := await client.action(game_id, act)
 	_busy = false
@@ -189,19 +191,28 @@ func _ai_to_move() -> bool:
 
 func _maybe_ai() -> void:
 	if not _ai_to_move() or game_id == "":
+		_ai_steps = 0
+		return
+	if _ai_steps >= 24:
+		_busy = false
+		_refresh()
 		return
 	_busy = true
-	await get_tree().create_timer(0.12).timeout
+	await get_tree().create_timer(0.08).timeout
 	var act := ClojureAi.pick(state, ClojureAi.actor(state))
 	if act.is_empty():
 		_busy = false
 		_refresh()
 		return
+	var before := JSON.stringify(state.get("actions", []))
 	var next_state := await client.action(game_id, act)
+	_ai_steps += 1
 	_busy = false
 	if bool(next_state.get("ok", false)) or next_state.has("actions"):
 		state = next_state
 	_refresh()
+	if JSON.stringify(state.get("actions", [])) == before:
+		return
 	if _ai_to_move():
 		_maybe_ai()
 
