@@ -6,4 +6,6 @@ const VERSION := "0.1.0"
 const SOURCE := "mtgred/netrunner (Jinteki.net Clojure core)"
 
 func _ready() -> void:
-	NRCardsBasic.register()
+	if ClassDB.class_exists("NRCardsBasic"):
+		pass
+	# Card packs register themselves from the smoke test / host app.
