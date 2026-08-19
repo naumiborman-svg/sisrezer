@@ -4,7 +4,31 @@
 
 卡牌数据与卡图来自 Jinteki 使用的 [NoahTheDuke/netrunner-data](https://github.com/NoahTheDuke/netrunner-data) / NetrunnerDB；规则是可玩的核心循环，不是 2000+ 张牌的完整 Clojure 引擎。
 
-## 运行
+## 运行要求
+
+| 项 | 要求 |
+| --- | --- |
+| 引擎 | **Godot 4.7.x 标准版**（`config_version=5`，features `4.7`）。不要用 Godot 3，不要用 .NET / Mono 版 |
+| 渲染 | Compatibility（`gl_compatibility`），不需要 Vulkan / Forward+ 独显 |
+| 窗口 | 1280×720 起，可拉伸 |
+| 系统 | Windows 10+、Linux x86_64，或 macOS 11+（Apple Silicon）/ 10.15+（Intel） |
+| 磁盘 | 工程包约 18 MB；macOS 应用包约 68 MB；再留几十 MB 给 `.godot` 导入缓存 |
+| 网络 | 不需要。单机，无账号、无 Mongo、无 Jinteki 服务器 |
+| 其它 | 不需要 Java、Leiningen、Android SDK。鼠标即可，无手柄要求 |
+
+三种打开方式：
+
+```bash
+# 1) 工程目录（编辑器 Import project.godot 后）
+godot --path /解压后的目录
+
+# 2) 资源包（同一份 4.7 标准编辑器）
+godot --main-pack Jinteki.pck
+
+# 3) macOS：双击 Jinteki.app（若被拦截：xattr -cr Jinteki.app）
+```
+
+重新导出需要本机已安装 **4.7.1 export templates**（含 `macos.zip`）。
 
 ```bash
 godot --path .
