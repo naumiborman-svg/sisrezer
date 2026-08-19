@@ -1,0 +1,10 @@
+{
+  "name": "chiriboga-bridge",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Headless Chiriboga engine host for the Godot client",
+  "main": "host.js",
+  "dependencies": {
+    "jsdom": "^26.1.0"
+  }
+}

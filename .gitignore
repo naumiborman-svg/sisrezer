@@ -1,5 +1,6 @@
 dist/
 .godot/
+chiriboga-bridge/node_modules/
 Logs/
 Temp/
 UserSettings/

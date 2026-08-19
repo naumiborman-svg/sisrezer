@@ -1,6 +1,23 @@
+# Chiriboga（Godot 复刻）
+
+[chiriboga.cronbach.com](https://chiriboga.cronbach.com) 的 Godot 4.7 客户端。规则权威是 **Chiriboga JS 引擎**（bobtheuberfish + DrBo6 Solo Mode），Godot 只做 CRT 菜单和桌面。
+
+启动：
+
+```bash
+./chiriboga-bridge/start.sh    # Node + jsdom，默认 http://127.0.0.1:1043
+godot --path .
+```
+
+标题菜单对齐原站：QUICK GAME、CUSTOM GAME、GAUNTLET、TUTORIAL 1–8、ACHIEVEMENTS、SETTINGS、CREDITS。卡组来自 `chiriboga-engine/precons/`。
+
+引擎 GPL-3.0，源码在 `chiriboga-engine/`。卡图为 NSG CC BY-ND。
+
+---
+
 # Jinteki (Godot)
 
-[mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Godot 4.7 客户端。两条规则路径：
+[mtgred/netrunner](https://github.com/mtgred/netrunner) 的 Godot 4.7 客户端（标题里 **LEGACY JINTEKI**）。两条规则路径：
 
 1. **离线 GDScript**：System Gateway **Beginner** 教学套牌，打到 **6** 议程分。卡图来自 [NoahTheDuke/netrunner-data](https://github.com/NoahTheDuke/netrunner-data) / NetrunnerDB。这是可玩的核心循环，不是 2000+ 张牌的完整规则。
 2. **完整 Clojure 引擎**：本机跑 Jinteki（`lein run`，默认 `http://127.0.0.1:1042`）。Godot 通过 `/godot/*` JSON 桥把每一条动作交给 JVM 上的 `process-action`。卡牌效果以 Clojure 源码为准。
@@ -101,4 +118,5 @@ godot --headless --path . -s res://tests/smoke.gd
 godot --headless --path . -s res://tests/rules.gd
 godot --headless --path . -s res://tests/ai_battle.gd
 godot --headless --path . -s res://tests/clojure_bridge.gd   # 无 Jinteki 时打印 SKIP
+godot --headless --path . -s res://tests/chiriboga_bridge.gd  # 无 Chiriboga host 时打印 SKIP
 ```

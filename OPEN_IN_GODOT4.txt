@@ -5,7 +5,13 @@ Open in the Godot 4 editor
    https://godotengine.org/download
 2. Godot → Import → select the folder that contains project.godot
    or:  godot --path /path/to/Jinteki
-3. Press F5 / Play. Title scene is res://scenes/title.tscn
+3. Press F5 / Play. Title scene is res://scenes/chiriboga_title.tscn
+   (legacy Jinteki title: res://scenes/title.tscn)
+
+Chiriboga replica (chiriboga.cronbach.com)
+- Start the JS engine host first: ./chiriboga-bridge/start.sh
+- Default URL http://127.0.0.1:1043  (override with CHIRIBOGA_URL)
+- Menu: Quick / Custom / Gauntlet / Tutorial / Achievements / Settings
 
 Load the exported pack (same Godot 4.7 editor binary)
   godot --main-pack Jinteki.pck
