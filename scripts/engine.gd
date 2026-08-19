@@ -52,6 +52,61 @@ func new_game(p_seed: int, decks: Dictionary) -> void:
 	_log("Game start. Play to %d agenda points." % agenda_goal)
 
 
+func actor() -> String:
+	if phase == "approach_ice" and not run.get("rez_done", false) and not run.get("ice", {}).get("rezzed", false):
+		return CORP
+	if phase in ["encounter", "approach_server", "access"]:
+		return RUNNER
+	if prompt in ["jailbreak_server", "overclock_server", "tread_server", "karuna_jack"]:
+		return RUNNER
+	if prompt == "seamless":
+		return CORP
+	return turn
+
+
+func clone() -> NREngine:
+	var c := NREngine.new(db)
+	c.rng.seed = rng.seed
+	c.rng.state = rng.state
+	c.uid_seq = uid_seq
+	c.corp = corp.duplicate(true)
+	c.runner = runner.duplicate(true)
+	c.remotes = remotes.duplicate(true)
+	c.turn = turn
+	c.phase = phase
+	c.run = run.duplicate(true)
+	c.prompt = prompt
+	c.prompt_data = prompt_data.duplicate(true)
+	c.winner = winner
+	c.win_reason = win_reason
+	c.agenda_goal = agenda_goal
+	c.flags = flags.duplicate(true)
+	c.log_lines = PackedStringArray()
+	c._rebind_run()
+	return c
+
+
+func _rebind_run() -> void:
+	if run.is_empty():
+		return
+	if run.get("ice", {}) is Dictionary and (run.ice as Dictionary).has("uid"):
+		var ice := find_uid(int(run.ice.uid))
+		if not ice.is_empty():
+			run.ice = ice
+	if run.get("current", {}) is Dictionary and (run.current as Dictionary).has("uid"):
+		var cur := find_uid(int(run.current.uid))
+		if not cur.is_empty():
+			run.current = cur
+	if run.has("queue") and run.queue is Array:
+		var nq: Array = []
+		for item: Variant in run.queue:
+			if item is Dictionary and item.has("uid"):
+				var found := find_uid(int(item.uid))
+				if not found.is_empty():
+					nq.append(found)
+		run.queue = nq
+
+
 func legal() -> Array:
 	if winner != "":
 		return []

@@ -11,7 +11,10 @@ var _busy := false
 
 
 func _ready() -> void:
-	if mode != "hotseat":
+	NRAi.style = "strong"
+	if mode == "watch":
+		human = ""
+	elif mode != "hotseat":
 		human = mode
 	set_anchors_preset(PRESET_FULL_RECT)
 	var bg := ColorRect.new()
@@ -20,7 +23,8 @@ func _ready() -> void:
 	add_child(bg)
 	_build_chrome()
 	engine = NREngine.new(CardLibrary.cards())
-	engine.new_game(1, CardLibrary.decks())
+	var seed_n := 0 if mode != "hotseat" else 1
+	engine.new_game(seed_n, CardLibrary.decks())
 	_refresh()
 	_maybe_ai()
 
@@ -90,7 +94,9 @@ func _refresh() -> void:
 func _status_text() -> String:
 	if engine.winner != "":
 		return "%s wins — %s" % [engine.winner.capitalize(), engine.win_reason]
-	return "Turn %s  ·  %s    Corp %dc / %dcl / %dAP    Runner %dc / %dcl / %dAP  MU %d/%d" % [
+	var vs := "Hotseat" if mode == "hotseat" else ("AI vs AI" if mode == "watch" else "vs Strong AI")
+	return "%s  ·  Turn %s  ·  %s    Corp %dc / %dcl / %dAP    Runner %dc / %dcl / %dAP  MU %d/%d" % [
+		vs,
 		engine.turn.capitalize(),
 		engine.phase,
 		engine.corp.credits, engine.corp.clicks, engine.agenda_points(NREngine.CORP),
@@ -117,7 +123,7 @@ func _paint_actions() -> void:
 		return
 	if _ai_to_move():
 		var wait := Label.new()
-		wait.text = "AI thinking…"
+		wait.text = "Strong AI thinking…"
 		action_box.add_child(wait)
 		return
 	for act: Variant in engine.legal():
@@ -192,30 +198,18 @@ func _do(act: Dictionary) -> void:
 		_maybe_ai()
 
 
-func _actor() -> String:
-	if engine.phase == "approach_ice" and not engine.run.get("rez_done", false) and not engine.run.get("ice", {}).get("rezzed", false):
-		return NREngine.CORP
-	if engine.phase in ["encounter", "approach_server", "access"]:
-		return NREngine.RUNNER
-	if engine.prompt in ["jailbreak_server", "overclock_server", "tread_server", "karuna_jack"]:
-		return NREngine.RUNNER
-	if engine.prompt == "seamless":
-		return NREngine.CORP
-	return engine.turn
-
-
 func _ai_to_move() -> bool:
 	if mode == "hotseat" or engine.winner != "":
 		return false
-	return _actor() != human
+	return engine.actor() != human
 
 
 func _maybe_ai() -> void:
 	if not _ai_to_move():
 		return
 	_busy = true
-	await get_tree().create_timer(0.25).timeout
-	var act := NRAi.pick(engine, _actor())
+	await get_tree().create_timer(0.12).timeout
+	var act := NRAi.pick(engine, engine.actor())
 	var ok := false
 	if not act.is_empty():
 		ok = engine.apply(act)

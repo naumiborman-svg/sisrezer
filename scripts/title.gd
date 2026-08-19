@@ -25,10 +25,15 @@ func _ready() -> void:
 	row.alignment = BoxContainer.ALIGNMENT_CENTER
 	row.add_theme_constant_override("separation", 16)
 	box.add_child(row)
-	row.add_child(_btn("Play as Runner", func() -> void: _start(NREngine.RUNNER)))
-	row.add_child(_btn("Play as Corp", func() -> void: _start(NREngine.CORP)))
-	row.add_child(_btn("Hotseat", func() -> void: _start("hotseat")))
-	box.add_child(_label("Starter decks play to 6 agenda points.  Click actions on the right.", 14, Color(0.55, 0.62, 0.68)))
+	row.add_child(_btn("对战强力 AI · Runner", func() -> void: _start(NREngine.RUNNER)))
+	row.add_child(_btn("对战强力 AI · Corp", func() -> void: _start(NREngine.CORP)))
+	var row2 := HBoxContainer.new()
+	row2.alignment = BoxContainer.ALIGNMENT_CENTER
+	row2.add_theme_constant_override("separation", 16)
+	box.add_child(row2)
+	row2.add_child(_btn("观看强力 AI 对战", func() -> void: _start("watch")))
+	row2.add_child(_btn("Hotseat", func() -> void: _start("hotseat")))
+	box.add_child(_label("System Gateway beginner  ·  6 AP  ·  对手带多步搜索", 14, Color(0.55, 0.62, 0.68)))
 
 
 func _label(text: String, size: int, color: Color) -> Label:
@@ -43,7 +48,7 @@ func _label(text: String, size: int, color: Color) -> Label:
 func _btn(text: String, cb: Callable) -> Button:
 	var b := Button.new()
 	b.text = text
-	b.custom_minimum_size = Vector2(180, 40)
+	b.custom_minimum_size = Vector2(220, 40)
 	b.pressed.connect(cb)
 	return b
 

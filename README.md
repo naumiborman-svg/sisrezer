@@ -12,8 +12,8 @@ godot --path .
 
 标题界面：
 
-- **Play as Runner** — 你操控 Runner，AI 操控 Corp
-- **Play as Corp** — 相反
+- **对战强力 AI · Runner / Corp** — 对手用多步搜索 + 局面评估
+- **观看强力 AI 对战** — 双方都是强力 AI
 - **Hotseat** — 双方轮流点动作
 
 右侧按钮是当前合法动作（点击、打出、安装、推进、打分、run、破冰……）。
@@ -32,4 +32,5 @@ godot --path .
 godot --headless --path . --import --quit
 godot --headless --path . -s res://tests/smoke.gd
 godot --headless --path . -s res://tests/rules.gd
+godot --headless --path . -s res://tests/ai_battle.gd
 ```

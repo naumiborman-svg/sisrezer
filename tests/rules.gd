@@ -182,9 +182,7 @@ func _test_ai_plays() -> void:
 	for _i in 120:
 		if e.winner != "":
 			break
-		var act: Dictionary = NRAi.pick(e, e.turn if e.phase == "action" else (
-			"corp" if e.phase == "approach_ice" and not e.run.get("rez_done", false) and not e.run.get("ice", {}).get("rezzed", false) else "runner"
-		))
+		var act: Dictionary = NRAi.pick(e, e.actor(), "greedy")
 		if act.is_empty():
 			_fail("AI found no action in phase %s" % e.phase)
 			return
