@@ -383,8 +383,7 @@ func _legal_actions() -> Array:
 		out.append({"op": "end_turn"})
 		return out
 	out.append({"op": "credit"})
-	if not side.deck.is_empty():
-		out.append({"op": "draw"})
+	out.append({"op": "draw"})
 	out.append({"op": "end_turn"})
 	if turn == CORP:
 		_legal_corp(out)
@@ -1185,7 +1184,7 @@ func _fire_sub(sub: Dictionary) -> bool:
 				_end_run(false, "Whitespace ends the run.")
 				return false
 		"diviner":
-			var before := runner.hand.duplicate()
+			var before: Array = runner.hand.duplicate()
 			_net_damage(1)
 			if winner != "":
 				return false

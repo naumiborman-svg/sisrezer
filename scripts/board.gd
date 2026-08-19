@@ -19,8 +19,8 @@ func _ready() -> void:
 	bg.color = Color(0.035, 0.07, 0.1)
 	add_child(bg)
 	_build_chrome()
-	engine = NREngine.new(CardDB.by_code)
-	engine.new_game(1, CardDB.decks)
+	engine = NREngine.new(CardLibrary.cards())
+	engine.new_game(1, CardLibrary.decks())
 	_refresh()
 	_maybe_ai()
 
@@ -216,11 +216,12 @@ func _maybe_ai() -> void:
 	_busy = true
 	await get_tree().create_timer(0.25).timeout
 	var act := NRAi.pick(engine, _actor())
+	var ok := false
 	if not act.is_empty():
-		engine.apply(act)
+		ok = engine.apply(act)
 	_busy = false
 	_refresh()
-	if _ai_to_move():
+	if ok and _ai_to_move():
 		_maybe_ai()
 
 

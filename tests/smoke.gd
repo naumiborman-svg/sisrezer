@@ -2,8 +2,7 @@ extends SceneTree
 
 
 func _initialize() -> void:
-	CardDB.load_data()
-	if CardDB.by_code.is_empty() or CardDB.decks.is_empty():
+	if CardLibrary.cards().is_empty() or CardLibrary.decks().is_empty():
 		push_error("card data missing")
 		quit(1)
 		return
