@@ -418,3 +418,15 @@ static func all_cards_in_hand_star(state: NRState, side: Variant) -> Array:
 static func fnil(_inner: Callable = Callable(), default_value: Variant = 0) -> Callable:
 	return func(v):
 		return default_value if v == null else v
+
+
+static func mu_plus(n: int = 1) -> Dictionary:
+	return {"type": "available-mu", "value": n}
+
+
+static func link_plus(n: int = 1) -> Dictionary:
+	return {"type": "user-link", "value": n}
+
+
+static func hand_size_plus(n: int = 1) -> Dictionary:
+	return {"type": "hand-size", "value": n}
