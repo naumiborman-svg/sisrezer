@@ -1,0 +1,14 @@
+; Android: Netrunner core engine (headless). Port of mtgred/netrunner (Jinteki.net).
+config_version=5
+
+[application]
+config/name="Netrunner Engine"
+config/description="Headless Android: Netrunner game engine translated from Jinteki.net Clojure core."
+run/main_scene="res://tests/headless_sim.tscn"
+config/features=PackedStringArray("4.3")
+
+[autoload]
+NR="*res://scripts/nr.gd"
+
+[rendering]
+renderer/rendering_method="gl_compatibility"
