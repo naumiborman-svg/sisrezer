@@ -88,12 +88,19 @@ Intel 和 Apple Silicon 通用 zip（未公证，Gatekeeper 会拦一次）：
 2. 若提示无法打开：在终端执行 `xattr -cr Jinteki.app`，或右键 **打开**
 3. 双击 `Jinteki.app`
 
-标题界面：
+标题界面（Chiriboga 里 **LEGACY JINTEKI**，或直接开 `res://scenes/title.tscn`）：
 
-- **对战强力 AI · Runner / Corp** — 离线 GDScript 规则，对手用多步搜索
-- **观看强力 AI 对战** / **Hotseat** — 同样是离线教学引擎
-- **完整 Clojure 引擎 · Runner / Corp** — 连本机 Jinteki，规则走 2000+ 张牌的 JVM 引擎
-- **观看 Clojure 引擎** / **Clojure Hotseat** — 同一套 HTTP 桥
+- **PLAY** — 官方预组（Gateway / Worlds / Classique，来自 `jinteki.preconstructed`）
+- **CARDS** — 2065 张牌浏览器（`data/jinteki/cards.json`，从 mtgred `data/cards.edn` 导出）
+- **Play full Clojure engine** — 连本机 `lein run` :1042，规则走 `process-action`
+- **Play Godot engine** — 同一套官方套牌在 GDScript 里打（费用 / 冰强度 / Gain credits / End the run 等印字效果；身份和复杂能力仍以 Clojure 为准）
+- **Offline beginner** — 原来的 System Gateway 教学 AI
+
+重新导出牌库：
+
+```bash
+python3 scripts/export_jinteki_data.py /path/to/netrunner data/jinteki
+```
 
 右侧按钮是当前合法动作。Clojure 模式的动作列表由服务器的 `actions` 字段给出。
 
@@ -120,6 +127,7 @@ godot --headless --path . --import --quit
 godot --headless --path . -s res://tests/smoke.gd
 godot --headless --path . -s res://tests/rules.gd
 godot --headless --path . -s res://tests/ai_battle.gd
+godot --headless --path . -s res://tests/jinteki_godot.gd
 godot --headless --path . -s res://tests/clojure_bridge.gd   # 无 Jinteki 时打印 SKIP
 godot --headless --path . -s res://tests/chiriboga_bridge.gd  # 无 Chiriboga host 时打印 SKIP
 ```

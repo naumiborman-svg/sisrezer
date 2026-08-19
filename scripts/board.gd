@@ -3,6 +3,8 @@ extends Control
 var mode := NREngine.RUNNER
 var engine: NREngine
 var human := NREngine.RUNNER
+var decks: Dictionary = {}
+var card_db: Dictionary = {}
 var log_box: RichTextLabel
 var action_box: VBoxContainer
 var table: Control
@@ -22,9 +24,9 @@ func _ready() -> void:
 	bg.color = Color(0.035, 0.07, 0.1)
 	add_child(bg)
 	_build_chrome()
-	engine = NREngine.new(CardLibrary.cards())
+	engine = NREngine.new(card_db if not card_db.is_empty() else CardLibrary.cards())
 	var seed_n := 0 if mode != "hotseat" else 1
-	engine.new_game(seed_n, CardLibrary.decks())
+	engine.new_game(seed_n, decks if not decks.is_empty() else CardLibrary.decks())
 	_refresh()
 	_maybe_ai()
 
@@ -292,14 +294,27 @@ func _hand_row(who: String) -> HBoxContainer:
 
 func _mini_card(card: Dictionary, face: bool) -> Control:
 	var wrap := VBoxContainer.new()
-	var tex := TextureRect.new()
-	tex.custom_minimum_size = Vector2(90, 126)
-	tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
-	tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 	if face:
 		var path := "res://assets/cards/%s.png" % card.code
 		if ResourceLoader.exists(path):
+			var tex := TextureRect.new()
+			tex.custom_minimum_size = Vector2(90, 126)
+			tex.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+			tex.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
 			tex.texture = load(path)
+			wrap.add_child(tex)
+		else:
+			var face_back := ColorRect.new()
+			face_back.custom_minimum_size = Vector2(90, 126)
+			face_back.color = Color(0.12, 0.18, 0.26)
+			wrap.add_child(face_back)
+			var name_l := Label.new()
+			name_l.text = str(card.get("title", "??"))
+			name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			name_l.autowrap_mode = TextServer.AUTOWRAP_OFF
+			name_l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
+			name_l.custom_minimum_size = Vector2(90, 0)
+			wrap.add_child(name_l)
 	else:
 		var back := ColorRect.new()
 		back.custom_minimum_size = Vector2(90, 126)
@@ -310,7 +325,6 @@ func _mini_card(card: Dictionary, face: bool) -> Control:
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		wrap.add_child(l)
 		return wrap
-	wrap.add_child(tex)
 	if int(card.get("advancement", 0)) > 0:
 		var adv := Label.new()
 		adv.text = "adv %d" % card.advancement

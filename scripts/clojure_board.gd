@@ -1,6 +1,7 @@
 extends Control
 
 var mode := "runner"
+var payload: Dictionary = {}
 var client: ClojureClient
 var game_id := ""
 var state: Dictionary = {}
@@ -15,6 +16,8 @@ var _ai_steps := 0
 
 
 func _ready() -> void:
+	if payload.has("side") and str(payload["side"]) != "":
+		mode = str(payload["side"])
 	if mode == "watch":
 		human = ""
 	elif mode != "hotseat":
@@ -31,7 +34,11 @@ func _ready() -> void:
 		await client.ready
 	_notice = "Connecting to Clojure engine at %s …" % client.base_url
 	_refresh()
-	var created := await client.new_game(6)
+	var created: Dictionary
+	if payload.is_empty():
+		created = await client.new_game(6)
+	else:
+		created = await client.new_game(payload)
 	if not bool(created.get("ok", false)) or str(created.get("id", "")) == "":
 		_notice = "Clojure engine unavailable: %s" % created.get("error", client.last_error)
 		_refresh()

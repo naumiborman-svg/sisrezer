@@ -4,7 +4,7 @@ config_version=5
 [application]
 
 config/name="Chiriboga"
-config/description="Godot replica of chiriboga.cronbach.com — DrBo6 Solo Mode on the bobtheuberfish Chiriboga engine"
+config/description="Godot clients for chiriboga.cronbach.com and mtgred/netrunner (Jinteki)"
 config/version="1.0.0"
 run/main_scene="res://scenes/chiriboga_title.tscn"
 config/features=PackedStringArray("4.7", "Forward Plus")

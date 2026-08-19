@@ -658,6 +658,16 @@ func _breaker_matches(br: Dictionary, ice: Dictionary) -> bool:
 		return "Code Gate" in ice.get("subtypes", [])
 	if code == "30015":
 		return "Sentry" in ice.get("subtypes", [])
+	var br_s: Array = br.get("subtypes", [])
+	var ice_s: Array = ice.get("subtypes", [])
+	if "AI" in br_s:
+		return true
+	if "Fracter" in br_s and "Barrier" in ice_s:
+		return true
+	if "Decoder" in br_s and "Code Gate" in ice_s:
+		return true
+	if "Killer" in br_s and "Sentry" in ice_s:
+		return true
 	return false
 
 
@@ -673,9 +683,17 @@ func _can_pay_break(br: Dictionary) -> bool:
 	return _available_runner_credits() >= 1
 
 
+func _pump_cost(br: Dictionary) -> int:
+	var code := str(br.code)
+	if code in ["30032", "30026"]:
+		return 1
+	if code in ["30006", "30015"]:
+		return 2
+	return 1
+
+
 func _can_pay_pump(br: Dictionary) -> bool:
-	var need := 1 if str(br.code) in ["30032", "30026"] else 2
-	return _available_runner_credits() >= need
+	return _available_runner_credits() >= _pump_cost(br)
 
 
 func _available_runner_credits() -> int:
@@ -874,8 +892,31 @@ func _resolve_play(card: Dictionary) -> bool:
 			prompt = "tread_server"
 			run = {"event": "30012", "rez_extra": 3}
 		_:
-			_move_to_discard(card)
+			_resolve_printed(card)
 	return true
+
+
+func _resolve_printed(card: Dictionary) -> void:
+	var text := str(card.get("text", ""))
+	var credits := _re_int(text, "Gain (\\d+)\\[credit\\]")
+	if credits > 0:
+		_gain(turn, credits)
+	var draws := _re_int(text, "Draw (\\d+)")
+	if draws > 0:
+		_draw(turn, draws)
+	_move_to_discard(card)
+	if credits == 0 and draws == 0:
+		_log("Played %s (printed effect simplified)." % card.title)
+
+
+func _re_int(text: String, pattern: String) -> int:
+	var rx := RegEx.new()
+	if rx.compile(pattern) != OK:
+		return 0
+	var m := rx.search(text)
+	if m == null:
+		return 0
+	return int(m.get_string(1))
 
 
 func _act_choose_server(server: String) -> bool:
@@ -1159,7 +1200,28 @@ func _build_subs(ice: Dictionary) -> Array:
 		"30039":
 			return [_sub("bran_install"), _sub("etr"), _sub("etr")]
 		_:
-			return [_sub("etr")]
+			return _subs_from_text(ice)
+
+
+func _subs_from_text(ice: Dictionary) -> Array:
+	var text := str(ice.get("text", ""))
+	var out: Array = []
+	var lower := text.to_lower()
+	var etr_n := lower.split("end the run").size() - 1
+	for _i in etr_n:
+		out.append(_sub("etr"))
+	var rx := RegEx.new()
+	if rx.compile("Do (\\d+) net damage") == OK:
+		var offset := 0
+		while true:
+			var m := rx.search(text, offset)
+			if m == null:
+				break
+			out.append(_sub("net", int(m.get_string(1))))
+			offset = m.get_end()
+	if out.is_empty():
+		out.append(_sub("etr"))
+	return out
 
 
 func _sub(kind: String, n: int = 0) -> Dictionary:
@@ -1186,7 +1248,7 @@ func _act_pump(uid: int) -> bool:
 	var br := find_uid(uid)
 	if br.is_empty():
 		return false
-	var cost := 1 if str(br.code) in ["30032", "30026"] else 2
+	var cost := _pump_cost(br)
 	if not _pay(RUNNER, cost):
 		return false
 	if str(br.code) == "30026":
