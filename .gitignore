@@ -1,0 +1,7 @@
+dist/
+.godot/
+Logs/
+Temp/
+UserSettings/
+*.translation
+.import/

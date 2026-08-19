@@ -1,0 +1,22 @@
+Jinteki — Godot 4.7 project
+
+Open in the Godot 4 editor
+1. Install Godot 4.7.x (standard, not .NET / Mono):
+   https://godotengine.org/download
+2. Godot → Import → select the folder that contains project.godot
+   or:  godot --path /path/to/Jinteki
+3. Press F5 / Play. Title scene is res://scenes/title.tscn
+
+Load the exported pack (same Godot 4.7 editor binary)
+  godot --main-pack Jinteki.pck
+
+Requires
+- Godot 4.7.x standard (not Godot 3, not .NET/Mono)
+- Compatibility renderer (no Vulkan required)
+- 1280x720 window
+- Windows 10+ / Linux x86_64 / macOS 11+ (Apple Silicon) or 10.15+ (Intel)
+- Offline GDScript beginner mode needs no server
+- Full Clojure mode needs a local Jinteki at http://127.0.0.1:1042
+  (apply clojure-bridge/apply.sh, then lein run)
+
+The project uses config/features 4.7 + Compatibility renderer.
