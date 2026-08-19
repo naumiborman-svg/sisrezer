@@ -35,7 +35,12 @@ static func pick_strong(engine: NREngine, who: String) -> Dictionary:
 	var ranked: Array = []
 	for act: Variant in options:
 		if act is Dictionary:
-			ranked.append({"act": act, "h": _heuristic(engine, who, act)})
+			var h := _heuristic(engine, who, act)
+			if h <= -300:
+				continue
+			ranked.append({"act": act, "h": h})
+	if ranked.is_empty():
+		return pick_greedy(engine, who)
 	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.h) > int(b.h))
 	var depth := _depth_for(engine, ranked[0].act)
 	var cap: int = mini(ranked.size(), 8 if engine.phase == "action" else 6)
@@ -102,7 +107,14 @@ static func _rank(engine: NREngine, who: String, options: Array, cap: int) -> Ar
 	var ranked: Array = []
 	for act: Variant in options:
 		if act is Dictionary:
-			ranked.append({"act": act, "h": _heuristic(engine, who, act)})
+			var h := _heuristic(engine, who, act)
+			if h <= -300:
+				continue
+			ranked.append({"act": act, "h": h})
+	if ranked.is_empty():
+		for act: Variant in options:
+			if act is Dictionary:
+				ranked.append({"act": act, "h": _heuristic(engine, who, act)})
 	ranked.sort_custom(func(a: Dictionary, b: Dictionary) -> bool: return int(a.h) > int(b.h))
 	if ranked.size() > cap:
 		ranked = ranked.slice(0, cap)
@@ -152,9 +164,17 @@ static func _evaluate(e: NREngine, me: String) -> float:
 		s += 35.0
 	if me == NREngine.RUNNER and runner_ap >= e.agenda_goal - 2:
 		s -= 35.0
-	if e.phase == "access" and not e.run.get("current", {}).is_empty():
-		if str(e.run.current.get("type", "")) == "Agenda":
-			s -= 60.0
+	if e.phase in ["approach_server", "access"]:
+		if _run_hits_agenda(e):
+			s -= 280.0
+	if e.phase in ["approach_ice", "encounter"]:
+		var ice_v: Variant = e.run.get("ice", {})
+		if ice_v is Dictionary and bool((ice_v as Dictionary).get("rezzed", false)):
+			var ice := ice_v as Dictionary
+			var bc := _break_cost(e, ice)
+			var pool := int(e.runner.credits) + int(e.run.get("overclock", 0))
+			if bc >= 90 or bc > pool:
+				s += 260.0
 	if me == NREngine.RUNNER:
 		s = -s
 	return s
@@ -436,6 +456,8 @@ static func _continue_h(engine: NREngine) -> int:
 
 static func _runner_play_h(engine: NREngine, act: Dictionary) -> int:
 	var card := engine.find_uid(int(act.uid))
+	if _unprotected_agenda_server(engine) != "" and engine.runner.clicks <= 1:
+		return 15
 	match str(card.get("code", "")):
 		"30030":
 			return 420 if engine.runner.credits <= 8 else 200
@@ -445,10 +467,8 @@ static func _runner_play_h(engine: NREngine, act: Dictionary) -> int:
 			return 80 if engine.runner.hand.size() < 4 else 20
 		"30028":
 			return _run_h(engine, "rd") + 40
-		"30012":
-			return _best_run(engine) + 30
-		"30029":
-			return _best_run(engine) + 50
+		"30012", "30029":
+			return _event_run_h(engine)
 	return 70
 
 
@@ -479,6 +499,36 @@ static func _has_breaker_type(engine: NREngine, card: Dictionary) -> bool:
 	return false
 
 
+static func _unprotected_agenda_server(engine: NREngine) -> String:
+	for remote: Variant in engine.remotes:
+		if not remote.ices.is_empty():
+			continue
+		for card: Variant in remote.root:
+			if str(card.type) == "Agenda":
+				return "remote:%d" % remote.id
+	return ""
+
+
+static func _run_hits_agenda(e: NREngine) -> bool:
+	var cur: Variant = e.run.get("current", {})
+	if cur is Dictionary and str((cur as Dictionary).get("type", "")) == "Agenda":
+		return true
+	var server := str(e.run.get("server", ""))
+	if not server.begins_with("remote:"):
+		return false
+	var remote := e.remote_by_id(int(server.get_slice(":", 1)))
+	for card: Variant in remote.root:
+		if str(card.type) == "Agenda":
+			return true
+	return false
+
+
+static func _event_run_h(engine: NREngine) -> int:
+	if _unprotected_agenda_server(engine) != "":
+		return 40
+	return _best_run(engine) + 40
+
+
 static func _run_h(engine: NREngine, server: String) -> int:
 	var ices: Array = engine.server_ices(server)
 	if ices.is_empty():
@@ -487,7 +537,7 @@ static func _run_h(engine: NREngine, server: String) -> int:
 			var remote := engine.remote_by_id(int(server.get_slice(":", 1)))
 			for card: Variant in remote.root:
 				if str(card.type) == "Agenda":
-					bonus += 220 + 30 * int(card.advancement)
+					bonus += 820 + 40 * int(card.advancement) + 80 * int(card.get("agendapoints", 0))
 				else:
 					bonus += 80
 		if server == "rd":
@@ -507,7 +557,7 @@ static func _run_h(engine: NREngine, server: String) -> int:
 			if engine.corp.credits >= int(ice.get("cost", 0)):
 				cost += mini(6, _break_cost(engine, ice))
 	if blocked or cost > engine.runner.credits + 2:
-		return 15
+		return -400
 	var dest_bonus := 50
 	if server == "rd":
 		dest_bonus = 80
