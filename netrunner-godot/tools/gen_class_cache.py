@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate Godot 4.3 global_script_class_cache.cfg so headless runs resolve class_name."""
+"""Generate Godot 4.7 global_script_class_cache.cfg so headless runs resolve class_name."""
 from __future__ import annotations
 
 import os
@@ -40,7 +40,7 @@ def main() -> None:
     out_dir = ROOT / ".godot"
     out_dir.mkdir(exist_ok=True)
     (out_dir / "global_script_class_cache.cfg").write_text(
-        "list=Array[Dictionary]([" + ", ".join(parts) + "])\n"
+        "list=[" + ", ".join(parts) + "]\n"
     )
     print("wrote", len(entries), "classes")
 
