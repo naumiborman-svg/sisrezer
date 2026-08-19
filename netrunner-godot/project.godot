@@ -1,16 +1,26 @@
-; Android: Netrunner core engine (headless). Port of mtgred/netrunner (Jinteki.net).
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all obvious.
+;
+; Format:
+;   [section] ; section goes between []
+;   param=value ; assign values to parameters
+
 config_version=5
 
 [application]
+
 config/name="Netrunner Engine"
 config/description="Headless Android: Netrunner game engine translated from Jinteki.net Clojure core."
 run/main_scene="res://tests/headless_sim.tscn"
 config/features=PackedStringArray("4.7")
 
 [autoload]
+
 NR="*res://scripts/nr.gd"
 
 [debug]
+
 gdscript/warnings/inference_on_variant=0
 gdscript/warnings/untyped_declaration=0
 gdscript/warnings/inferred_declaration=0
@@ -34,5 +44,12 @@ gdscript/warnings/native_method_override=0
 gdscript/warnings/get_node_default_without_onready=0
 gdscript/warnings/onready_with_export=0
 
+[display]
+
+window/size/viewport_width=1280
+window/size/viewport_height=800
+window/stretch/mode="canvas_items"
+
 [rendering]
+
 renderer/rendering_method="gl_compatibility"
