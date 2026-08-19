@@ -1,0 +1,13 @@
+Jinteki — Godot 4.7 project
+
+Open in the Godot 4 editor
+1. Install Godot 4.7.x (standard, not .NET / Mono):
+   https://godotengine.org/download
+2. Godot → Import → select the folder that contains project.godot
+   or:  godot --path /path/to/Jinteki
+3. Press F5 / Play. Title scene is res://scenes/title.tscn
+
+Load the exported pack (same Godot 4.7 editor binary)
+  godot --main-pack Jinteki.pck
+
+Requires Godot 4.7. The project uses config/features 4.7 + Compatibility renderer.

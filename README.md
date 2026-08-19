@@ -10,6 +10,26 @@
 godot --path .
 ```
 
+## Godot 4 工程包（编辑器可载入）
+
+用 **Godot 4.7**（标准版，非 Mono）打开：
+
+1. 解压 `Jinteki-godot4-project.zip`
+2. Godot → **Import**，选里面的 `project.godot`
+3. 或：`godot --path /解压后的目录`
+
+同版本编辑器也可直接载入导出包：
+
+```bash
+godot --main-pack Jinteki.pck
+```
+
+重新打包：
+
+```bash
+./scripts/export_godot4.sh
+```
+
 ## macOS 下载包
 
 Intel 和 Apple Silicon 通用 zip（未公证，Gatekeeper 会拦一次）：
