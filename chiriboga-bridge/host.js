@@ -94,11 +94,15 @@ function makeCardRenderer() {
   };
   class Renderer {
     constructor() {
-      this.tutorialText = { text: "" };
+      this.tutorialText = { text: "", x: 0, y: 0, rotation: 0 };
+      this.archivesIndicator = dummySprite();
+      this.newRemoteIndicator = dummySprite();
+      this.serverSelector = dummySprite();
+      this.serverText = { x: 0, y: 0, rotation: 0, text: "" };
       this.app = {
-        view: { nodeName: "CANVAS" },
-        renderer: { plugins: { sprite: { sprites: [] } } },
-        stage: { addChild() {}, removeChild() {} },
+        view: { nodeName: "CANVAS", style: {} },
+        renderer: { plugins: { sprite: { sprites: [] } }, resize() {} },
+        stage: { addChild() {}, removeChild() {}, pivot: { x: 0, y: 0 }, x: 0, y: 0 },
         ticker: { add() {} },
       };
     }
@@ -117,6 +121,12 @@ function makeCardRenderer() {
       };
     }
     UpdateGlow() {}
+    UpdateCounters() {}
+    HideParticleContainers() {}
+    ShowParticleContainers() {}
+    MousePosition() {
+      return { x: 0, y: 0 };
+    }
     ChangeSide() {}
     RenderSubroutineChoices() {}
     Render() {}

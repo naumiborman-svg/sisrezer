@@ -17,16 +17,30 @@ var _notice := ""
 var _ai_watch := false
 
 
+func _fill(node: Control, pad := Vector4.ZERO) -> void:
+	node.anchor_left = 0.0
+	node.anchor_top = 0.0
+	node.anchor_right = 1.0
+	node.anchor_bottom = 1.0
+	node.offset_left = pad.x
+	node.offset_top = pad.y
+	node.offset_right = -pad.z
+	node.offset_bottom = -pad.w
+	node.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	node.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
 func _ready() -> void:
 	_ai_watch = str(payload.get("mode", "")) == "watch"
-	set_anchors_preset(PRESET_FULL_RECT)
+	_fill(self)
 	var bg := ColorRect.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	_fill(bg)
 	bg.color = BG
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	if bool(ChiribogaSave.settings().get("crt", true)):
 		var overlay := ColorRect.new()
-		overlay.set_anchors_preset(PRESET_FULL_RECT)
+		_fill(overlay)
 		overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		var mat := ShaderMaterial.new()
 		mat.shader = load("res://assets/shaders/crt_scanlines.gdshader")
@@ -54,11 +68,7 @@ func _ready() -> void:
 
 func _build() -> void:
 	var root := VBoxContainer.new()
-	root.set_anchors_preset(PRESET_FULL_RECT)
-	root.offset_left = 12
-	root.offset_top = 8
-	root.offset_right = -12
-	root.offset_bottom = -8
+	_fill(root, Vector4(12, 8, 12, 8))
 	add_child(root)
 	status = Label.new()
 	status.add_theme_font_size_override("font_size", 15)
@@ -237,7 +247,7 @@ func _paint_table() -> void:
 	for child in table.get_children():
 		child.queue_free()
 	var col := VBoxContainer.new()
-	col.set_anchors_preset(PRESET_FULL_RECT)
+	_fill(col)
 	col.add_theme_constant_override("separation", 8)
 	table.add_child(col)
 	var corp: Dictionary = state.get("corp", {})
@@ -327,7 +337,8 @@ func _mini(card: Dictionary, face: bool) -> Control:
 		var l := Label.new()
 		l.text = str(card.get("title", "??")) if face else "ICE"
 		l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		l.autowrap_mode = TextServer.AUTOWRAP_OFF
+		l.text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS
 		l.custom_minimum_size = Vector2(84, 0)
 		l.add_theme_color_override("font_color", GREEN)
 		wrap.add_child(l)

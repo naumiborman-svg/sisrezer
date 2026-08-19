@@ -15,12 +15,26 @@ var _host_ok := false
 var _threat := 1
 
 
+func _fill(node: Control, pad := Vector4.ZERO) -> void:
+	node.anchor_left = 0.0
+	node.anchor_top = 0.0
+	node.anchor_right = 1.0
+	node.anchor_bottom = 1.0
+	node.offset_left = pad.x
+	node.offset_top = pad.y
+	node.offset_right = -pad.z
+	node.offset_bottom = -pad.w
+	node.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	node.grow_vertical = Control.GROW_DIRECTION_BOTH
+
+
 func _ready() -> void:
 	settings = ChiribogaSave.settings()
-	set_anchors_preset(PRESET_FULL_RECT)
+	_fill(self)
 	var bg := ColorRect.new()
-	bg.set_anchors_preset(PRESET_FULL_RECT)
+	_fill(bg)
 	bg.color = BG
+	bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(bg)
 	_build_chrome()
 	if bool(settings.get("crt", true)):
@@ -34,7 +48,7 @@ func _ready() -> void:
 
 func _add_scanlines() -> void:
 	var overlay := ColorRect.new()
-	overlay.set_anchors_preset(PRESET_FULL_RECT)
+	_fill(overlay)
 	overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	var mat := ShaderMaterial.new()
 	mat.shader = load("res://assets/shaders/crt_scanlines.gdshader")
@@ -45,11 +59,7 @@ func _add_scanlines() -> void:
 
 func _build_chrome() -> void:
 	var root := VBoxContainer.new()
-	root.set_anchors_preset(PRESET_FULL_RECT)
-	root.offset_left = 36
-	root.offset_top = 18
-	root.offset_right = -36
-	root.offset_bottom = -18
+	_fill(root, Vector4(36, 18, 36, 18))
 	add_child(root)
 	var top := HBoxContainer.new()
 	root.add_child(top)
@@ -205,7 +215,7 @@ func _show_custom() -> void:
 func _show_gauntlet() -> void:
 	_clear(_left)
 	_left.add_child(_label("GAUNTLET", 22, GREEN))
-	_left.add_child(_label("Sequential corp opponents. Shop / hack / perks from gauntlet.php stay on the JS host as match chain.", 13, DIM))
+	_left.add_child(_label("Sequential corp opponents. Shop / hack / perks from gauntlet.php stay on the JS host as match chain.", 13, DIM, true))
 	var length := int(settings.get("gauntlet_length", 4))
 	_left.add_child(_label("LENGTH  %s" % length, 14, GREEN))
 	_left.add_child(_menu_btn("NEW", func() -> void:
@@ -288,11 +298,11 @@ func _show_credits() -> void:
 	box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(box)
 	box.add_child(_label("CREDITS", 22, GREEN))
-	box.add_child(_label("This Netrunner Solo Mode extension for the Chiriboga engine is developed by DrBo6. It adds a more refined interface and game modes.", 13, DIM))
-	box.add_child(_label("Chiriboga is a Netrunner engine developed by bobtheuberfish. It implements Android: Netrunner gameplay with an AI opponent.", 13, DIM))
-	box.add_child(_label("Godot replica drives the original JS engine headless (text mode) over HTTP :1043.", 13, DIM))
-	box.add_child(_label("Card art & symbols are property of Null Signal Games, used under CC BY-ND 4.0. Fan implementation, not endorsed by NSG / FFG / WotC.", 13, DIM))
-	box.add_child(_label("GPL-3.0  ·  chiriboga.cronbach.com  ·  github.com/bobtheuberfish/chiriboga  ·  github.com/drbo6/chiriboga", 12, MUTED))
+	box.add_child(_label("This Netrunner Solo Mode extension for the Chiriboga engine is developed by DrBo6. It adds a more refined interface and game modes.", 13, DIM, true))
+	box.add_child(_label("Chiriboga is a Netrunner engine developed by bobtheuberfish. It implements Android: Netrunner gameplay with an AI opponent.", 13, DIM, true))
+	box.add_child(_label("Godot replica drives the original JS engine headless (text mode) over HTTP :1043.", 13, DIM, true))
+	box.add_child(_label("Card art & symbols are property of Null Signal Games, used under CC BY-ND 4.0. Fan implementation, not endorsed by NSG / FFG / WotC.", 13, DIM, true))
+	box.add_child(_label("GPL-3.0  ·  chiriboga.cronbach.com  ·  github.com/bobtheuberfish/chiriboga  ·  github.com/drbo6/chiriboga", 12, MUTED, true))
 	_left.add_child(_menu_btn("BACK", func() -> void: _show_main()))
 
 
@@ -317,10 +327,10 @@ func _precons(side: String, custom_only: bool) -> Array:
 	return out
 
 
-func _label(text: String, size: int, color: Color) -> Label:
+func _label(text: String, size: int, color: Color, wrap := false) -> Label:
 	var l := Label.new()
 	l.text = text
-	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART if wrap else TextServer.AUTOWRAP_OFF
 	l.add_theme_font_size_override("font_size", size)
 	l.add_theme_color_override("font_color", color)
 	return l
