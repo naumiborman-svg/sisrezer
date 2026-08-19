@@ -1,0 +1,7 @@
+This Godot port is a derivative of Chiriboga (https://github.com/drbo6/chiriboga),
+which is licensed under the GNU General Public License v3.0.
+
+See the original LICENSE at https://github.com/drbo6/chiriboga
+
+Netrunner card text is used under Null Signal Games' community guidelines.
+This is a fan-made unofficial project.

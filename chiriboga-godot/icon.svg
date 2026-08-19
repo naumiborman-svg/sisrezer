@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" fill="#0a100a"/>
+  <rect x="8" y="8" width="112" height="112" fill="none" stroke="#33ff33" stroke-width="3"/>
+  <text x="64" y="72" text-anchor="middle" font-family="monospace" font-size="42" fill="#33ff33">NR</text>
+  <text x="64" y="96" text-anchor="middle" font-family="monospace" font-size="10" fill="#66ff66">CHIRIBOGA</text>
+</svg>
