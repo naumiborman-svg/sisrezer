@@ -28,6 +28,12 @@
    "30014" 1 "30018" 1 "30033" 2 "30027" 2 "30034" 1 "30015" 2 "30006" 2
    "30032" 2 "30026" 2})
 
+(defn- card-ref [c]
+  {:cid (:cid c)
+   :zone (mapv #(if (keyword? %) (name %) (str %)) (or (:zone c) []))
+   :side (:side c)
+   :type (:type c)})
+
 (defn- jsonish [x]
   (cond
     (nil? x) nil
@@ -153,7 +159,7 @@
                     {:command "select"
                      :side side-s
                      :label (str "Select " (or (:title c) cid))
-                     :args {:card {:cid cid}}}))
+                     :args {:card (if c (card-ref c) {:cid cid})}}))
                 cids))
         (or (= :credit choices) (:number choices) (:counter choices))
         (let [mx (or (:max (:number choices)) 5)]
@@ -201,7 +207,7 @@
          {:command "ability"
           :side (name side)
           :label (str (or (:title card) "?") ": " (or (:label ab) (:msg ab) (str "Ability " idx)))
-          :args {:card {:cid (:cid card)} :ability idx}}))
+          :args {:card (card-ref card) :ability idx}}))
      abs)))
 
 (defn- legal-actions [state]
@@ -234,7 +240,7 @@
                              {:command "play"
                               :side side-s
                               :label (str "Play " (:title c))
-                              :args {:card {:cid (:cid c)}}})
+                              :args {:card (card-ref c)}})
                 runs (when (and (= side :runner) (pos? clicks) (not running?))
                        (for [server (server-names state)]
                          {:command "run"
@@ -247,7 +253,7 @@
                         {:command "rez"
                          :side "corp"
                          :label (str "Rez " (or (:title c) "card"))
-                         :args {:card {:cid (:cid c)}}}))
+                         :args {:card (card-ref c)}}))
                 advance (when (and (= side :corp) (pos? clicks))
                           (for [c (board/corp-servers-cards state)
                                 :when (or (card/agenda? c)
@@ -257,14 +263,14 @@
                             {:command "advance"
                              :side "corp"
                              :label (str "Advance " (or (:title c) "card"))
-                             :args {:card {:cid (:cid c)}}}))
+                             :args {:card (card-ref c)}}))
                 score (when (= side :corp)
                         (for [c (board/corp-servers-cards state)
                               :when (can-score? c)]
                           {:command "score"
                            :side "corp"
                            :label (str "Score " (:title c))
-                           :args {:card {:cid (:cid c)}}}))
+                           :args {:card (card-ref c)}}))
                 abs (mapcat #(ability-actions state side %)
                             (filter #(= (if (= side :corp) "Corp" "Runner") (:side %))
                                     (installed-cards state)))
@@ -419,17 +425,24 @@
     (#{"runner" "Runner" "RUNNER"} (str side)) :runner
     :else :corp))
 
+(defn- hydrate-args [state args]
+  (let [args (or args {})
+        cid (get-in args [:card :cid])]
+    (if-let [found (and cid (some #(when (= cid (:cid %)) %) (board/get-all-cards state)))]
+      (assoc args :card (card-ref found))
+      args)))
+
 (defn action-handler [req]
   (let [body (or (:body req) {})
         id (or (:id body) (game-id req))
         command (or (:command body) (:op body))
         side (keywordize-side (or (:side body) (:active-player body)))
-        args (or (:args body) {})]
+        raw-args (or (:args body) {})]
     (if-let [state (lookup id)]
       (try
         (when (str/blank? (str command))
           (throw (ex-info "missing command" {})))
-        (pa/process-action (str command) state side args)
+        (pa/process-action (str command) state side (hydrate-args state raw-args))
         (response 200 (game-view (str id) state))
         (catch Exception e
           (response 200 (assoc (game-view (str id) state)

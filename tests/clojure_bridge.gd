@@ -33,6 +33,14 @@ func _initialize() -> void:
 		push_error("credit did not apply: %s -> %s" % [before, credits])
 		quit(1)
 		return
+	var play_act := _find_command(after, "play", "corp")
+	if not play_act.is_empty():
+		var played: Dictionary = await client.action(gid, play_act)
+		if str(played.get("error", "")) != "":
+			push_error("play failed: %s" % played["error"])
+			quit(1)
+			return
+		after = played
 	var steps := 0
 	var cur := after
 	while steps < 10 and str(cur.get("winner", "")) == "":
