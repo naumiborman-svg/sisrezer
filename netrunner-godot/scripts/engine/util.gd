@@ -356,8 +356,10 @@ static func is_number(v: Variant) -> bool:
 
 ## Convert a Variant flag to bool. Godot 4.3 `bool(x)` only accepts bool/int/float.
 static func truthy(v: Variant) -> bool:
-	if v == null or v == false:
+	if v == null:
 		return false
+	if v is bool:
+		return v
 	if v is Array:
 		return not v.is_empty()
 	if v is Dictionary:
@@ -366,8 +368,6 @@ static func truthy(v: Variant) -> bool:
 		return v != ""
 	if v is int or v is float:
 		return v != 0
-	if v is bool:
-		return v
 	return true
 
 
