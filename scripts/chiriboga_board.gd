@@ -303,7 +303,7 @@ func _maybe_watch() -> void:
 	if not _ai_watch or game_id == "" or str(state.get("winner", "")) != "":
 		return
 	await get_tree().create_timer(0.4).timeout
-	var st := await client.get_state(game_id)
+	var st: Dictionary = await client.get_state(game_id)
 	if st.has("actions"):
 		state = st
 	_refresh()
