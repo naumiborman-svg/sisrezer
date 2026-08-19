@@ -13,6 +13,9 @@ static func actor(state: Dictionary) -> String:
 
 
 static func pick(state: Dictionary, side: String) -> Dictionary:
+	var me: Dictionary = state.get(side, {})
+	var clicks: int = int(me.get("clicks", 0))
+	var prompt: Variant = state.get("prompt", null)
 	var best: Dictionary = {}
 	var best_score := -99999
 	for item: Variant in state.get("actions", []):
@@ -22,10 +25,19 @@ static func pick(state: Dictionary, side: String) -> Dictionary:
 		var who := str(act.get("side", side))
 		if who != "" and who != side:
 			continue
+		var cmd := str(act.get("command", ""))
+		if prompt == null and clicks > 0 and cmd in ["rez", "ability"]:
+			continue
+		if prompt == null and clicks == 0 and cmd in ["ability", "advance"]:
+			continue
 		var score := _score(state, act, side)
 		if score > best_score:
 			best_score = score
 			best = act
+	if best.is_empty():
+		for item: Variant in state.get("actions", []):
+			if item is Dictionary and str(item.get("command", "")) in ["end-turn", "start-turn", "end-phase-12"]:
+				return item
 	return best
 
 
@@ -67,8 +79,7 @@ static func _score(state: Dictionary, act: Dictionary, side: String) -> int:
 				return 95
 			return 60
 		"rez":
-			var clicks_left: int = int((corp if side == "corp" else runner).get("clicks", 0))
-			return 25 if clicks_left == 0 else 75
+			return 20
 		"advance":
 			return 85
 		"credit":

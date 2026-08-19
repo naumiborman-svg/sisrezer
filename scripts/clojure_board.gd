@@ -183,6 +183,13 @@ func _do(act: Dictionary) -> void:
 	_maybe_ai()
 
 
+func _first_command(names: Array) -> Dictionary:
+	for item: Variant in state.get("actions", []):
+		if item is Dictionary and str(item.get("command", "")) in names:
+			return item
+	return {}
+
+
 func _ai_to_move() -> bool:
 	if mode == "hotseat" or str(state.get("winner", "")) != "" or state.is_empty():
 		return false
@@ -193,7 +200,17 @@ func _maybe_ai() -> void:
 	if not _ai_to_move() or game_id == "":
 		_ai_steps = 0
 		return
-	if _ai_steps >= 24:
+	if _ai_steps >= 16:
+		var forced := _first_command(["end-turn", "start-turn", "end-phase-12"])
+		if not forced.is_empty() and _ai_steps < 18:
+			_ai_steps = 18
+			_busy = true
+			state = await client.action(game_id, forced)
+			_busy = false
+			_refresh()
+			if _ai_to_move():
+				_maybe_ai()
+			return
 		_busy = false
 		_refresh()
 		return
