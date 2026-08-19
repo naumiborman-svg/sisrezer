@@ -26,7 +26,8 @@ func _ready() -> void:
 	_build_chrome()
 	client = ClojureClient.new()
 	add_child(client)
-	await client.ready
+	if not client.is_node_ready():
+		await client.ready
 	_notice = "Connecting to Clojure engine at %s …" % client.base_url
 	_refresh()
 	var created := await client.new_game(6)

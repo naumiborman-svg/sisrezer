@@ -11,6 +11,7 @@ func _ready() -> void:
 		base_url = OS.get_environment("JINTEKI_URL").rstrip("/")
 	_http = HTTPRequest.new()
 	_http.timeout = 20.0
+	_http.use_threads = true
 	add_child(_http)
 
 
